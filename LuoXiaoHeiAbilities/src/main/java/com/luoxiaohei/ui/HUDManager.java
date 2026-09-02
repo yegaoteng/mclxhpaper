@@ -18,10 +18,11 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * HUD管理器 - 右侧计分板显示
- * 上方: 当前技能名(蓝)/灵力消耗(蓝)/冷却(绿)/经验(金)
- * 下方: 作者ppksp(浅蓝)
- * 再下方: 各技能冷却列表(简约)
+ * HUD管理器 - 右侧计分板显示 (v2.1)
+ * - 去掉标题文字 (用空格代替, 兼容小地图)
+ * - 顶部留空行让HUD下移 (避开右上角小地图区域)
+ * - 显示当前技能开关状态
+ * - 兼容其他插件的计分板 (复用已有scoreboard)
  */
 public class HUDManager {
 
@@ -57,6 +58,8 @@ public class HUDManager {
         SKILL_KEYS.put(AbilityType.WOOD, new String[]{"heal-forest", "thorn-bind", "life-bloom"});
     }
 
+    // 顶部留3行空白让HUD下移 (避开小地图), 最多15行
+    private static final int TOP_PADDING = 3;
     private static final int MAX_LINES = 15;
 
     public HUDManager(LuoXiaoHeiPlugin plugin) {
@@ -80,18 +83,31 @@ public class HUDManager {
     public void show(Player p) {
         Scoreboard sb = boards.get(p.getUniqueId());
         if (sb == null) {
-            sb = Bukkit.getScoreboardManager().getNewScoreboard();
+            // 兼容小地图: 复用玩家已有scoreboard, 不创建新的
+            sb = p.getScoreboard();
+            if (sb == null || sb == Bukkit.getScoreboardManager().getMainScoreboard()) {
+                sb = Bukkit.getScoreboardManager().getNewScoreboard();
+            }
             boards.put(p.getUniqueId(), sb);
 
-            Objective obj = sb.registerNewObjective("hud", "dummy");
+            // 先清除可能存在的旧objective
+            Objective old = sb.getObjective("lxh_hud");
+            if (old != null) old.unregister();
+
+            Objective obj = sb.registerNewObjective("lxh_hud", "dummy");
             obj.setDisplaySlot(DisplaySlot.SIDEBAR);
-            obj.setDisplayName(msg.get("hud-title"));
+            // 去掉"罗小黑能力"标题, 用空格代替
+            obj.setDisplayName("§r");
             objectives.put(p.getUniqueId(), obj);
 
             Team[] ts = new Team[MAX_LINES];
             for (int i = 0; i < MAX_LINES; i++) {
-                Team t = sb.registerNewTeam("hud_line_" + i);
-                String entry = ChatColor.values()[i].toString() + ChatColor.RESET;
+                String teamName = "lxh_l" + i;
+                Team oldTeam = sb.getTeam(teamName);
+                if (oldTeam != null) oldTeam.unregister();
+                Team t = sb.registerNewTeam(teamName);
+                // 使用唯一entry避免与其他插件冲突
+                String entry = ChatColor.COLOR_CHAR + "" + (char)('a' + (i / 26)) + (char)('a' + (i % 26)) + ChatColor.RESET;
                 t.addEntry(entry);
                 obj.getScore(entry).setScore(MAX_LINES - 1 - i);
                 ts[i] = t;
@@ -105,7 +121,7 @@ public class HUDManager {
         Scoreboard sb = boards.remove(p.getUniqueId());
         objectives.remove(p.getUniqueId());
         teams.remove(p.getUniqueId());
-        // 重置为主计分板
+        // 重置为主计分板 (不强制清除, 让其他插件恢复)
         p.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
     }
 
@@ -117,14 +133,25 @@ public class HUDManager {
         PlayerData d = dm.getData(p);
         int line = 0;
 
+        // === 顶部留白 (让HUD下移, 避开小地图) ===
+        for (int i = 0; i < TOP_PADDING; i++) {
+            setLine(ts, line++, "§r " + ChatColor.COLOR_CHAR + (char)('a' + i));
+        }
+
+        // === 开关状态 ===
+        String toggleStr = d.isEnabled() ? "§a● 开" : "§c○ 关";
+        if (d.getAbilityType() == AbilityType.NONE) {
+            setLine(ts, line++, "§7技能: §c未觉醒");
+        } else {
+            setLine(ts, line++, "§7技能: " + toggleStr);
+        }
+
         // === 上半部分 ===
         if (d.getAbilityType() == AbilityType.NONE) {
-            setLine(ts, line++, msg.get("hud-no-ability"));
             setLine(ts, line++, "§7阶数: §f" + cm.getLevelChinese(d.getCultivationLevel()));
             setLine(ts, line++, "§6经验: §f" + d.getCultivationXp() + "/" + cm.getXpToNext(d.getCultivationLevel()));
             setLine(ts, line++, "§b灵力: §f" + d.getSpiritual() + "/" + d.getMaxSpiritual());
         } else if (!d.isEnabled()) {
-            setLine(ts, line++, msg.get("hud-disabled"));
             setLine(ts, line++, "§7能力: " + d.getAbilityType().getColor() + d.getAbilityType().getChinese());
             setLine(ts, line++, "§7阶数: §f" + cm.getLevelChinese(d.getCultivationLevel()));
             setLine(ts, line++, "§6经验: §f" + d.getCultivationXp() + "/" + cm.getXpToNext(d.getCultivationLevel()));
@@ -161,10 +188,10 @@ public class HUDManager {
         setLine(ts, line++, msg.get("hud-author"));
 
         // 空行
-        setLine(ts, line++, "§r ");
+        if (line < MAX_LINES) setLine(ts, line++, "§r  ");
 
         // === 技能冷却列表 ===
-        setLine(ts, line++, msg.get("hud-skills-header"));
+        if (line < MAX_LINES) setLine(ts, line++, msg.get("hud-skills-header"));
         if (d.getAbilityType() != AbilityType.NONE) {
             String[] names = SKILL_NAMES.get(d.getAbilityType());
             String[] keys = SKILL_KEYS.get(d.getAbilityType());

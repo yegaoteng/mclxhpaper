@@ -36,7 +36,7 @@ spirit-block-break: "§c灵块已移除"
 
 # 按键绑定
 keybind-set: "§a按键绑定: §f{action} §a→ §f{key}"
-keybind-invalid: "§c无效的按键类型, 可选: SWAP_HANDS, SHIFT_SWAP, DROP, SHIFT_DROP"
+keybind-invalid: "§c无效的按键类型, 可选: SNEAK, SWAP_HANDS, SHIFT_SWAP, DROP, SHIFT_DROP"
 
 # 指令
 cmd-no-permission: "§c权限不足"
@@ -47,10 +47,12 @@ cmd-reload: "§a配置已重载"
 cmd-usage: "§7用法: {usage}"
 
 # HUD
-hud-title: "§b§l罗小黑能力"
+hud-title: "§r"
 hud-author: "§b作者: §fppksp"
 hud-skills-header: "§7── 技能冷却 ──"
 hud-skill-ready: "§a✓"
 hud-skill-cooldown: "§c{seconds}s"
 hud-disabled: "§c技能未开启"
 hud-no-ability: "§7未觉醒能力"
+hud-toggle-on: "§a● 开"
+hud-toggle-off: "§c○ 关"

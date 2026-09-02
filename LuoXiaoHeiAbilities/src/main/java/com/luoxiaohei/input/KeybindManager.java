@@ -10,21 +10,23 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.event.player.PlayerToggleSneakEvent;
 
 import java.util.Arrays;
 import java.util.List;
 
 /**
- * 按键绑定管理器
+ * 按键绑定管理器 v2.1
  *
- * Bukkit无法直接检测Alt/Ctrl, 使用以下替代:
+ * Bukkit无法直接检测Alt/Ctrl/M等键, 使用以下替代:
  * - SWAP_HANDS: F键 (交换主副手)
  * - SHIFT_SWAP: Shift+F
  * - DROP: Q键 (丢弃物品)
  * - SHIFT_DROP: Shift+Q
+ * - SNEAK: Shift键 (单按, 仅按下时触发)
  *
- * 默认: F键=切换技能, Shift+F=开关技能
- * 玩家可用 /ability bind 自定义
+ * 默认: SNEAK(Shift)=切换技能, SWAP_HANDS(F)=开关技能
+ * 玩家可用 /ability bind 自定义, 或 /ability cycle 手动切换
  */
 public class KeybindManager implements Listener {
 
@@ -32,7 +34,12 @@ public class KeybindManager implements Listener {
     private final PlayerDataManager dm;
     private final MessagesManager msg;
 
-    public static final List<String> VALID_BINDS = Arrays.asList("SWAP_HANDS", "SHIFT_SWAP", "DROP", "SHIFT_DROP");
+    public static final List<String> VALID_BINDS = Arrays.asList(
+            "SWAP_HANDS", "SHIFT_SWAP", "DROP", "SHIFT_DROP", "SNEAK");
+
+    // 防止sneak快速重复触发 (冷却500ms)
+    private final java.util.Map<java.util.UUID, Long> sneakLastTrigger = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final long SNEAK_COOLDOWN_MS = 500;
 
     public KeybindManager(LuoXiaoHeiPlugin plugin) {
         this.plugin = plugin;
@@ -76,10 +83,37 @@ public class KeybindManager implements Listener {
         }
     }
 
+    @EventHandler
+    public void onSneak(PlayerToggleSneakEvent e) {
+        Player p = e.getPlayer();
+        PlayerData d = dm.getData(p);
+        if (d.getAbilityType() == AbilityType.NONE) return;
+        // 只在按下shift时触发 (不是松开)
+        if (!e.isSneaking()) return;
+
+        String trigger = "SNEAK";
+        boolean matched = false;
+        if (trigger.equals(d.getBindCycle())) {
+            matched = true;
+            // 冷却检查
+            Long last = sneakLastTrigger.get(p.getUniqueId());
+            if (last != null && System.currentTimeMillis() - last < SNEAK_COOLDOWN_MS) return;
+            sneakLastTrigger.put(p.getUniqueId(), System.currentTimeMillis());
+            cycleSkill(p);
+        } else if (trigger.equals(d.getBindToggle())) {
+            matched = true;
+            Long last = sneakLastTrigger.get(p.getUniqueId());
+            if (last != null && System.currentTimeMillis() - last < SNEAK_COOLDOWN_MS) return;
+            sneakLastTrigger.put(p.getUniqueId(), System.currentTimeMillis());
+            toggleSkills(p);
+        }
+        // 不取消sneak事件, 让玩家正常蹲下
+    }
+
     /**
-     * 切换到下一个技能
+     * 切换到下一个技能 (可从外部调用)
      */
-    private void cycleSkill(Player p) {
+    public void cycleSkill(Player p) {
         PlayerData d = dm.getData(p);
         int max = getSkillCount(d.getAbilityType());
         if (max == 0) return;
@@ -90,9 +124,9 @@ public class KeybindManager implements Listener {
     }
 
     /**
-     * 开关技能
+     * 开关技能 (可从外部调用)
      */
-    private void toggleSkills(Player p) {
+    public void toggleSkills(Player p) {
         PlayerData d = dm.getData(p);
         boolean newState = !d.isEnabled();
         d.setEnabled(newState);

@@ -45,8 +45,8 @@ public class PlayerData {
         this.cultivationLevel = 1;
         this.cultivationXp = 0;
         this.currentSkillIndex = 0;
-        this.bindCycle = "SWAP_HANDS";
-        this.bindToggle = "SHIFT_SWAP";
+        this.bindCycle = "SNEAK";
+        this.bindToggle = "SWAP_HANDS";
     }
 
     // === Getters/Setters ===

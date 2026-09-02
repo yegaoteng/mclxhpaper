@@ -73,8 +73,8 @@ public class PlayerDataManager {
             data.setCultivationLevel(cfg.getInt("cultivation.level", 1));
             data.setCultivationXp(cfg.getInt("cultivation.xp", 0));
             data.setCurrentSkillIndex(cfg.getInt("current-skill", 0));
-            data.setBindCycle(cfg.getString("binds.cycle", "SWAP_HANDS"));
-            data.setBindToggle(cfg.getString("binds.toggle", "SHIFT_SWAP"));
+            data.setBindCycle(cfg.getString("binds.cycle", "SNEAK"));
+            data.setBindToggle(cfg.getString("binds.toggle", "SWAP_HANDS"));
 
             ConfigurationSection cd = cfg.getConfigurationSection("cooldowns");
             if (cd != null) for (String k : cd.getKeys(false)) data.setCooldown(k, cd.getLong(k));

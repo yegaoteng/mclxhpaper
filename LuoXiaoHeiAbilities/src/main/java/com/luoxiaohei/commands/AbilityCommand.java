@@ -14,15 +14,17 @@ import org.bukkit.entity.Player;
 import java.util.*;
 
 /**
- * /ability 指令 v2.0
+ * /ability 指令 v2.1
  * - set <玩家> <类型>     指定玩家觉醒能力
  * - on/off [玩家]         开关技能
+ * - cycle                 手动切换技能
  * - list                  列出能力
  * - reload                重载配置
  * - info [玩家]           查看信息
  * - bind <cycle|toggle> <按键>  绑定按键
  * - givespirit <玩家> <数量>    给予灵力
  * - givexp <玩家> <数量>        给予修炼经验
+ * - items [类型] [数量]          获取灵矿/灵物 (创造模式也可用)
  */
 public class AbilityCommand implements CommandExecutor, TabCompleter {
 
@@ -40,27 +42,31 @@ public class AbilityCommand implements CommandExecutor, TabCompleter {
             case "set": cmdSet(s, args); break;
             case "on": cmdToggle(s, args, true); break;
             case "off": cmdToggle(s, args, false); break;
+            case "cycle": cmdCycle(s, args); break;
             case "reload": cmdReload(s); break;
             case "info": cmdInfo(s, args); break;
             case "bind": cmdBind(s, args); break;
             case "givespirit": cmdGiveSpirit(s, args); break;
             case "givexp": cmdGiveXp(s, args); break;
+            case "items": cmdItems(s, args); break;
             default: help(s);
         }
         return true;
     }
 
     private void help(CommandSender s) {
-        s.sendMessage("§b===== §e罗小黑能力系统 v2 §b=====");
+        s.sendMessage("§b===== §e罗小黑能力系统 v2.1 §b=====");
         s.sendMessage("§7/ability list §f- 列出能力");
         s.sendMessage("§7/ability set <玩家> <metal|space|fire|thunder|wood>");
         s.sendMessage("§7/ability on|off [玩家] §f- 开关技能");
-        s.sendMessage("§7/ability bind <cycle|toggle> <SWAP_HANDS|SHIFT_SWAP|DROP|SHIFT_DROP>");
+        s.sendMessage("§7/ability cycle §f- 手动切换技能");
+        s.sendMessage("§7/ability bind <cycle|toggle> <SNEAK|SWAP_HANDS|SHIFT_SWAP|DROP|SHIFT_DROP>");
+        s.sendMessage("§7/ability items [ore|particle|block|melon|all] [数量] §f- 获取灵物");
         s.sendMessage("§7/ability givespirit <玩家> <数量> §f- 给予灵力");
         s.sendMessage("§7/ability givexp <玩家> <数量> §f- 给予修炼经验");
         s.sendMessage("§7/ability info [玩家] §f- 查看信息");
         s.sendMessage("§7/ability reload §f- 重载配置");
-        s.sendMessage("§e默认按键: F=切换技能, Shift+F=开关技能");
+        s.sendMessage("§e默认按键: Shift=切换技能, F=开关技能");
     }
 
     private void listAbilities(CommandSender s) {
@@ -112,7 +118,7 @@ public class AbilityCommand implements CommandExecutor, TabCompleter {
             s.sendMessage(plugin.getMessagesManager().getPrefixed("cmd-no-permission")); return;
         }
         if (args.length < 3) {
-            p.sendMessage("§7用法: /ability bind <cycle|toggle> <SWAP_HANDS|SHIFT_SWAP|DROP|SHIFT_DROP>");
+            p.sendMessage("§7用法: /ability bind <cycle|toggle> <SNEAK|SWAP_HANDS|SHIFT_SWAP|DROP|SHIFT_DROP>");
             PlayerData d = plugin.getPlayerDataManager().getData(p);
             p.sendMessage("§7当前: 切换=" + d.getBindCycle() + " 开关=" + d.getBindToggle());
             return;
@@ -127,6 +133,56 @@ public class AbilityCommand implements CommandExecutor, TabCompleter {
         else if (action.equals("toggle")) d.setBindToggle(key);
         else { p.sendMessage("§c操作必须是 cycle 或 toggle"); return; }
         p.sendMessage(plugin.getMessagesManager().getPrefixed("keybind-set", "action", action, "key", key));
+    }
+
+    private void cmdCycle(CommandSender s, String[] args) {
+        if (!(s instanceof Player p)) { s.sendMessage("§c仅玩家可切换技能"); return; }
+        PlayerData d = plugin.getPlayerDataManager().getData(p);
+        if (d.getAbilityType() == AbilityType.NONE) {
+            s.sendMessage(plugin.getMessagesManager().getPrefixed("ability-not-set")); return;
+        }
+        plugin.getKeybindManager().cycleSkill(p);
+    }
+
+    private void cmdItems(CommandSender s, String[] args) {
+        if (!(s instanceof Player p)) { s.sendMessage("§c仅玩家可获取物品"); return; }
+        if (!p.hasPermission("ability.use")) {
+            s.sendMessage(plugin.getMessagesManager().getPrefixed("cmd-no-permission")); return;
+        }
+        var sim = plugin.getSpiritItemManager();
+        String type = args.length >= 2 ? args[1].toLowerCase() : "all";
+        int amount = 1;
+        if (args.length >= 3) {
+            try { amount = Math.max(1, Integer.parseInt(args[2])); } catch (Exception e) { amount = 1; }
+        }
+        switch (type) {
+            case "ore":
+                p.getInventory().addItem(sim.createRawOre(amount));
+                p.sendMessage("§a获得 §f灵矿石 §ax" + amount);
+                break;
+            case "particle":
+                p.getInventory().addItem(sim.createParticle(amount));
+                p.sendMessage("§a获得 §f灵粒 §ax" + amount);
+                break;
+            case "block":
+                p.getInventory().addItem(sim.createSpiritBlock(amount));
+                p.sendMessage("§a获得 §f灵块 §ax" + amount);
+                break;
+            case "melon":
+                p.getInventory().addItem(sim.createSpiritMelon(amount));
+                p.sendMessage("§a获得 §f灵瓜 §ax" + amount);
+                break;
+            case "all":
+                p.getInventory().addItem(sim.createRawOre(amount));
+                p.getInventory().addItem(sim.createParticle(amount));
+                p.getInventory().addItem(sim.createSpiritBlock(amount));
+                p.getInventory().addItem(sim.createSpiritMelon(amount));
+                p.sendMessage("§a获得全部灵物 §ax" + amount);
+                break;
+            default:
+                p.sendMessage("§7用法: /ability items <ore|particle|block|melon|all> [数量]");
+                break;
+        }
     }
 
     private void cmdGiveSpirit(CommandSender s, String[] args) {
@@ -185,11 +241,12 @@ public class AbilityCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender s, Command cmd, String alias, String[] args) {
         List<String> r = new ArrayList<>();
         if (args.length == 1) {
-            for (String sub : Arrays.asList("list","set","on","off","info","reload","bind","givespirit","givexp"))
+            for (String sub : Arrays.asList("list","set","on","off","cycle","info","reload","bind","givespirit","givexp","items"))
                 if (sub.startsWith(args[0].toLowerCase())) r.add(sub);
             return r;
         }
-        if (args.length == 2 && !args[0].equalsIgnoreCase("list") && !args[0].equalsIgnoreCase("reload")) {
+        if (args.length == 2 && !args[0].equalsIgnoreCase("list") && !args[0].equalsIgnoreCase("reload")
+                && !args[0].equalsIgnoreCase("cycle") && !args[0].equalsIgnoreCase("items")) {
             for (Player p : Bukkit.getOnlinePlayers())
                 if (p.getName().toLowerCase().startsWith(args[1].toLowerCase())) r.add(p.getName());
             return r;
@@ -207,6 +264,11 @@ public class AbilityCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("bind")) {
             for (String a : Arrays.asList("cycle", "toggle"))
+                if (a.startsWith(args[1].toLowerCase())) r.add(a);
+            return r;
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("items")) {
+            for (String a : Arrays.asList("ore", "particle", "block", "melon", "all"))
                 if (a.startsWith(args[1].toLowerCase())) r.add(a);
             return r;
         }

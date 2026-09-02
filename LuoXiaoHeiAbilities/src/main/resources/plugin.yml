@@ -3,11 +3,11 @@ version: '${project.version}'
 main: com.luoxiaohei.LuoXiaoHeiPlugin
 api-version: '1.21'
 author: ppksp
-description: 罗小黑战记风格特殊能力插件 v2.0
+description: 罗小黑战记风格特殊能力插件 v2.1
 commands:
   ability:
     description: 能力管理指令
-    usage: /ability <list|set|on|off|bind|givespirit|givexp|info|reload> [参数]
+    usage: /ability <list|set|on|off|cycle|bind|items|givespirit|givexp|info|reload> [参数]
     aliases: [ab, 能力]
     permission: ability.use
   lingqi:

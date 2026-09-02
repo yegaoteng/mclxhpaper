@@ -139,8 +139,7 @@ public class WoodAbility extends BaseAbility implements Listener {
         if (!d.isEnabled()) return; // 技能关闭时不拦截
         // 只拦截右键 (左键正常)
         if (e.getAction() != Action.RIGHT_CLICK_AIR && e.getAction() != Action.RIGHT_CLICK_BLOCK) return;
-        if (!p.getInventory().getItemInMainHand().getType().isAir()) return;
-
+        // 物品栏有物品时也可使用技能 (右键=技能)
         e.setCancelled(true);
         switch (d.getCurrentSkillIndex()) {
             case 0: healForest(p); break;

@@ -36,9 +36,10 @@ hud:
 
 # 按键绑定
 keybinds:
-  # 可选: SWAP_HANDS(F键), SHIFT_SWAP(Shift+F), DROP(Q键), SHIFT_DROP(Shift+Q)
-  default-cycle: SWAP_HANDS
-  default-toggle: SHIFT_SWAP
+  # 可选: SNEAK(Shift键), SWAP_HANDS(F键), SHIFT_SWAP(Shift+F), DROP(Q键), SHIFT_DROP(Shift+Q)
+  # 注意: Bukkit无法检测M/Alt/Ctrl等键, Shift是最接近单键的选择
+  default-cycle: SNEAK
+  default-toggle: SWAP_HANDS
 
 # 灵力恢复
 spiritual:

@@ -76,6 +76,10 @@ public abstract class BaseAbility {
     // ========== 伤害 (标记为技能伤害, 用于修炼经验) ==========
     protected void damage(LivingEntity target, Player source, double amount, boolean ignoreArmor) {
         if (target == null || target.isDead()) return;
+        // 先标记为技能伤害 (5秒有效), 再造成伤害
+        // 这样即使伤害致死, EntityDeathEvent触发时metadata已存在
+        target.setMetadata("skill_damage",
+            new FixedMetadataValue(plugin, source.getUniqueId() + ":" + System.currentTimeMillis()));
         if (ignoreArmor) {
             double cur = target.getHealth();
             target.setHealth(Math.max(0, cur - amount));
@@ -83,9 +87,6 @@ public abstract class BaseAbility {
         } else {
             target.damage(amount, source);
         }
-        // 标记为技能伤害 (5秒有效)
-        target.setMetadata("skill_damage",
-            new FixedMetadataValue(plugin, source.getUniqueId() + ":" + System.currentTimeMillis()));
     }
 
     // ========== 粒子 ==========
