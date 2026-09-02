@@ -11,8 +11,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.metadata.MetadataValue;
 
-import java.util.UUID;
-
 /**
  * 能力相关全局监听器 v2.0
  * - 技能击杀获取修炼经验
@@ -42,28 +40,16 @@ public class AbilityListener implements Listener {
     }
 
     /**
-     * 技能击杀获取修炼经验
+     * 击杀生物获取修炼经验 (无论技能开关与否, 只要玩家有系能力即获经验)
      */
     @EventHandler
     public void onEntityKill(org.bukkit.event.entity.EntityDeathEvent e) {
         LivingEntity entity = e.getEntity();
-        // 检查技能伤害标记
-        for (MetadataValue mv : entity.getMetadata("skill_damage")) {
-            if (mv.getOwningPlugin() != plugin) continue;
-            String data = mv.asString();
-            String[] parts = data.split(":");
-            if (parts.length < 2) continue;
-            try {
-                UUID killerId = UUID.fromString(parts[0]);
-                long time = Long.parseLong(parts[1]);
-                if (System.currentTimeMillis() - time < 5000) { // 5秒内
-                    Player killer = Bukkit.getPlayer(killerId);
-                    if (killer != null && killer.isOnline()) {
-                        plugin.getCultivationManager().grantKillXp(killer);
-                    }
-                }
-            } catch (Exception ignored) {}
-            break;
-        }
+        Player killer = entity.getKiller();
+        if (killer == null) return;
+        com.luoxiaohei.data.PlayerData d = plugin.getPlayerDataManager().getData(killer);
+        // 有系能力即可获得经验 (不检查技能开关)
+        if (d.getAbilityType() == AbilityType.NONE) return;
+        plugin.getCultivationManager().grantKillXp(killer);
     }
 }

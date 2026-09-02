@@ -13,6 +13,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 import java.util.*;
@@ -38,6 +39,8 @@ public class MetalAbility extends BaseAbility implements Listener {
 
     private final Map<UUID, List<FallingBlock>> floatingMetals = new ConcurrentHashMap<>();
     private final Map<UUID, Long> shieldPlayers = new ConcurrentHashMap<>();
+    // 追踪每个悬浮金属的轨道任务, 发射时取消 (否则轨道会覆盖发射速度)
+    private final Map<Integer, org.bukkit.scheduler.BukkitTask> orbitTasks = new ConcurrentHashMap<>();
 
     public MetalAbility(LuoXiaoHeiPlugin plugin) {
         super(plugin, "metal");
@@ -163,9 +166,9 @@ public class MetalAbility extends BaseAbility implements Listener {
 
     private void startFloatingOrbit(Player p, FallingBlock fb) {
         final float[] angle = {(float)(Math.random() * Math.PI * 2)};
-        new BukkitRunnable() {
+        BukkitTask task = new BukkitRunnable() {
             @Override public void run() {
-                if (fb.isDead() || !p.isOnline()) { cancel(); return; }
+                if (fb.isDead() || !p.isOnline()) { cancel(); orbitTasks.remove(fb.getEntityId()); return; }
                 angle[0] += 0.15;
                 double r = 2.2;
                 Location cur = p.getLocation();
@@ -174,12 +177,17 @@ public class MetalAbility extends BaseAbility implements Listener {
                 p.getWorld().spawnParticle(Particle.END_ROD, dest, 1, 0, 0, 0, 0);
             }
         }.runTaskTimer(plugin, 1, 1);
+        orbitTasks.put(fb.getEntityId(), task);
     }
 
     // ===== 发射金属 (修复伤害) =====
     private void fireMetal(Player p, List<FallingBlock> list) {
         if (list.isEmpty()) return;
         FallingBlock fb = list.remove(0);
+        // 取消轨道任务! 否则轨道每tick传送方块, 覆盖发射速度, 导致无法飞行
+        BukkitTask orbit = orbitTasks.remove(fb.getEntityId());
+        if (orbit != null) orbit.cancel();
+
         double speed = cfg.getActionDouble("metal.metal-control.projectile-speed", 1.5);
         double dmg = aDmg("metal-control");
 
