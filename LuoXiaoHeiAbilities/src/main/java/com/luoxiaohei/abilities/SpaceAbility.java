@@ -351,7 +351,8 @@ public class SpaceAbility extends BaseAbility implements Listener {
         if (d.getAbilityType() != AbilityType.SPACE) return;
         if (!d.isEnabled()) return;
         if (e.getAction() != Action.RIGHT_CLICK_AIR && e.getAction() != Action.RIGHT_CLICK_BLOCK) return;
-        // 物品栏有物品时也可使用技能 (右键=技能)
+        // 手持灵瓜时不触发技能 (灵瓜监听器已cancel, 这里跳过)
+        if (plugin.getSpiritItemManager().isSpiritMelon(p.getInventory().getItemInMainHand())) return;
         e.setCancelled(true);
         switch (d.getCurrentSkillIndex()) {
             case 0: devourBlocks(p); break;

@@ -7,10 +7,13 @@ import org.bukkit.block.Furnace;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.inventory.FurnaceSmeltEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
@@ -200,7 +203,29 @@ public class SpiritItemManager implements Listener {
         e.setResult(createParticle(2));
     }
 
-    // ========== 事件: 吃灵瓜 ==========
+    // ========== 事件: 右键吃灵瓜 ==========
+    // 闪烁西瓜片无FoodComponent, 原版不可食用, 这里手动处理右键食用
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onRightClickMelon(PlayerInteractEvent e) {
+        if (e.getAction() != Action.RIGHT_CLICK_AIR && e.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        Player p = e.getPlayer();
+        ItemStack hand = p.getInventory().getItemInMainHand();
+        if (!isSpiritMelon(hand)) return;
+        // 优先级LOWEST: 先cancel, 防止能力监听器触发技能
+        e.setCancelled(true);
+        // 消耗1个灵瓜
+        if (hand.getAmount() > 1) hand.setAmount(hand.getAmount() - 1);
+        else p.getInventory().setItemInMainHand(null);
+        // 恢复灵力
+        int restore = plugin.getConfig().getInt("spiritual.spirit-melon-restore", 750);
+        plugin.getPlayerDataManager().addSpiritual(p, restore);
+        p.sendMessage(plugin.getMessagesManager().getPrefixed("spirit-melon-eat"));
+        // 食用音效+粒子
+        p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_BURP, 1, 1);
+        p.getWorld().spawnParticle(Particle.END_ROD, p.getEyeLocation(), 15, 0.3, 0.3, 0.3, 0.05);
+    }
+
+    // ========== 事件: 原版食用(兼容其他食物机制) ==========
     @EventHandler
     public void onConsume(PlayerItemConsumeEvent e) {
         if (!isSpiritMelon(e.getItem())) return;
