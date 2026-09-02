@@ -1,0 +1,84 @@
+# =============================================================
+# LuoXiaoHeiAbilities v2.0 主配置
+# =============================================================
+
+# 修炼系统 (5阶)
+cultivation:
+  xp-per-kill: 20
+  # 升阶条件: 灵力满 + 经验达到要求
+  levels:
+    1:
+      max-spiritual: 1000
+      regen-per-second: 2
+      xp-to-next: 7500
+    2:
+      max-spiritual: 2000
+      regen-per-second: 3
+      xp-to-next: 20000
+    3:
+      max-spiritual: 3500
+      regen-per-second: 5
+      xp-to-next: 50000
+    4:
+      max-spiritual: 7000
+      regen-per-second: 7
+      xp-to-next: 100000
+    5:
+      max-spiritual: 10000
+      regen-per-second: 10
+      bonus-health: 20
+      xp-to-next: 0
+
+# HUD 显示 (右侧计分板)
+hud:
+  enabled: true
+  update-interval: 10  # tick
+
+# 按键绑定
+keybinds:
+  # 可选: SWAP_HANDS(F键), SHIFT_SWAP(Shift+F), DROP(Q键), SHIFT_DROP(Shift+Q)
+  default-cycle: SWAP_HANDS
+  default-toggle: SHIFT_SWAP
+
+# 灵力恢复
+spiritual:
+  death-keep-percent: 50
+  # 灵块倍率系统
+  spirit-block-radius: 5
+  spirit-block-max-layers: 16
+  # 灵瓜恢复量
+  spirit-melon-restore: 750
+
+# 灵矿配置
+spirit-ore:
+  enabled: true
+  # 灵矿世界方块类型 (白色发光)
+  block-type: SEA_LANTERN
+  # 生成概率 (铁矿级别, 比钻石常见)
+  spawn-rate: iron
+  min-height: -24
+  max-height: 56
+  max-vein-size: 9
+  attempts-per-chunk: 20
+
+# 能力开关
+abilities:
+  metal-enabled: true
+  space-enabled: true
+  fire-enabled: true
+  thunder-enabled: true
+  wood-enabled: true
+
+# 性能优化
+performance:
+  async-processing: true
+  devour-queue-max: 500
+  hud-update-interval: 10
+  regen-check-interval: 20
+  ore-cache-ttl: 100
+
+# 权限节点
+permissions:
+  give-spiritual: ability.admin
+  give-xp: ability.admin
+  bind: ability.use

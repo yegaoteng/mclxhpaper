@@ -1,0 +1,56 @@
+# =============================================================
+# messages.yml - 所有玩家消息自定义
+# 占位符: {player} {ability} {skill} {cost} {seconds} {xp} {level}
+#          {max_spiritual} {multiplier} {amount} {key} {action}
+# =============================================================
+
+prefix: "§b[罗小黑] "
+
+# 能力相关
+ability-set: "{ability_color}{ability} §f能力已觉醒!"
+ability-cleared: "§c能力已被移除"
+ability-toggle-on: "§a技能已开启 - 右键释放技能"
+ability-toggle-off: "§c技能已关闭 - 恢复正常生存"
+ability-not-set: "§c你尚未觉醒任何能力, 请联系管理员"
+ability-disabled-in-config: "§c该能力在配置中被禁用"
+
+# 技能相关
+skill-cycle: "§e▶ 技能: §f{skill}"
+skill-cooldown: "§c技能冷却中 §f{seconds}s"
+skill-no-spirit: "§c灵力不足! 需要 §f{cost}"
+skill-cast: "§e[{skill}]"
+skill-empty: "§c没有可用技能"
+
+# 修炼系统
+cultivation-xp-gain: "§6+{xp} 修炼经验 §7({xp}/{need})"
+cultivation-levelup: "§d★ 突破成功! 进入第{level}阶 §7灵力上限: {max_spiritual}"
+cultivation-max-level: "§d已达最高阶(五阶)!"
+cultivation-need-full-spirit: "§c灵力未满, 无法突破! §7({spiritual}/{max_spiritual})"
+cultivation-info: "§b阶数: §f{level} §7| §6经验: §f{xp}/{need} §7| §b灵力: §f{spiritual}/{max}"
+
+# 灵矿/灵物
+spirit-ore-mine: "§b获得 灵矿石 x{amount}"
+spirit-melon-eat: "§b灵瓜 | 恢复 750 灵力"
+spirit-block-place: "§b灵块已放置 §7(倍率: {multiplier}x)"
+spirit-block-break: "§c灵块已移除"
+
+# 按键绑定
+keybind-set: "§a按键绑定: §f{action} §a→ §f{key}"
+keybind-invalid: "§c无效的按键类型, 可选: SWAP_HANDS, SHIFT_SWAP, DROP, SHIFT_DROP"
+
+# 指令
+cmd-no-permission: "§c权限不足"
+cmd-player-not-found: "§c玩家不存在或离线"
+cmd-give-spirit: "§a已给予 §f{player} §a{amount} 灵力"
+cmd-give-xp: "§a已给予 §f{player} §a{amount} 修炼经验"
+cmd-reload: "§a配置已重载"
+cmd-usage: "§7用法: {usage}"
+
+# HUD
+hud-title: "§b§l罗小黑能力"
+hud-author: "§b作者: §fppksp"
+hud-skills-header: "§7── 技能冷却 ──"
+hud-skill-ready: "§a✓"
+hud-skill-cooldown: "§c{seconds}s"
+hud-disabled: "§c技能未开启"
+hud-no-ability: "§7未觉醒能力"

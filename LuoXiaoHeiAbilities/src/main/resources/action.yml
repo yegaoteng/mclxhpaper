@@ -1,0 +1,151 @@
+# 能力动作配置 - 伤害/灵力消耗/冷却时间
+
+metal:
+  metal-control:
+    enabled: true
+    cooldown: 5
+    cost: 50
+    damage: 8.0
+    projectile-speed: 1.5
+    max-blocks: 8
+    range: 30
+  metal-storm:
+    enabled: true
+    cooldown: 90
+    cost: 200
+    damage: 6.0
+    hits: 5
+    radius: 8
+    need-metal: true
+  metal-shield:
+    enabled: true
+    cooldown: 120
+    cost: 150
+    damage: 0
+    duration: 15
+    defense: 0.5
+    knockback: true
+  metal-spear:
+    enabled: true
+    cooldown: 180
+    cost: 350
+    damage: 35.0
+    pierce: 3
+    range: 40
+
+space:
+  space-domain:
+    enabled: true
+    cooldown: 300
+    cost: 500
+    damage: 0
+    duration: 60
+    radius: 20
+    effects:
+      speed-boost: 2
+      slowness-enemy: 2
+      damage-boost: 0.3
+      blindness: false
+  space-devour:
+    enabled: true
+    cooldown: 15
+    cost: 30
+    damage: 0
+    max-blocks: 64
+    range: 12
+    restore-delay: 30
+    temp-shield-per-block: 0.5
+    max-temp-shield: 30
+  space-teleport:
+    enabled: true
+    cooldown: 0
+    cost: 40
+    damage: 0
+    range: 20
+    max-charges: 3
+    charge-time: 20
+  space-slash:
+    enabled: true
+    cooldown: 25
+    cost: 120
+    damage: 20.0
+    range: 25
+    width: 3
+    ignore-armor: true
+
+fire:
+  fireball:
+    enabled: true
+    cooldown: 3
+    cost: 15
+    damage: 10.0
+    fire-ticks: 40
+    explosion: false
+    range: 30
+  fire-storm:
+    enabled: true
+    cooldown: 60
+    cost: 200
+    damage: 4.0
+    ticks: 100
+    radius: 6
+    burn: true
+  fire-shield:
+    enabled: true
+    cooldown: 90
+    cost: 150
+    damage: 3.0
+    duration: 20
+    damage-reduction: 0.25
+
+thunder:
+  lightning-bolt:
+    enabled: true
+    cooldown: 10
+    cost: 60
+    damage: 15.0
+    strike-mob: true
+    chain: 3
+    chain-range: 5
+  thunder-fury:
+    enabled: true
+    cooldown: 180
+    cost: 400
+    damage: 12.0
+    duration: 10
+    radius: 15
+    strikes-per-second: 3
+  thunder-dash:
+    enabled: true
+    cooldown: 15
+    cost: 80
+    damage: 8.0
+    range: 15
+    speed: 2.0
+    stun-seconds: 1
+
+wood:
+  heal-forest:
+    enabled: true
+    cooldown: 45
+    cost: 100
+    damage: 0
+    heal-amount: 20
+    radius: 8
+    duration: 10
+    heal-per-tick: 1
+  thorn-bind:
+    enabled: true
+    cooldown: 20
+    cost: 60
+    damage: 2.0
+    bind-seconds: 5
+    range: 20
+  life-bloom:
+    enabled: true
+    cooldown: 300
+    cost: 600
+    damage: 0
+    revive: true
+    heal-full: true
+    radius: 12

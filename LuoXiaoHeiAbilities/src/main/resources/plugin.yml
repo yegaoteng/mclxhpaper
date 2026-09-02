@@ -1,0 +1,23 @@
+name: LuoXiaoHeiAbilities
+version: '${project.version}'
+main: com.luoxiaohei.LuoXiaoHeiPlugin
+api-version: '1.21'
+author: ppksp
+description: 罗小黑战记风格特殊能力插件 v2.0
+commands:
+  ability:
+    description: 能力管理指令
+    usage: /ability <list|set|on|off|bind|givespirit|givexp|info|reload> [参数]
+    aliases: [ab, 能力]
+    permission: ability.use
+  lingqi:
+    description: 查看灵力
+    usage: /lingqi [玩家]
+    aliases: [lq, 灵力]
+permissions:
+  ability.admin:
+    description: 管理能力
+    default: op
+  ability.use:
+    description: 使用能力
+    default: true
