@@ -119,11 +119,17 @@ public class HUDManager {
     }
 
     private void update(Player p) {
+        PlayerData d = dm.getData(p);
+
+        // 普通玩家(无能力)隐藏所有HUD显示, 直至OP用指令set系能力才显示
+        if (d.getAbilityType() == AbilityType.NONE) {
+            if (boards.containsKey(p.getUniqueId())) hide(p);
+            return;
+        }
+
         Objective obj = objectives.get(p.getUniqueId());
         Team[] ts = teams.get(p.getUniqueId());
         if (obj == null || ts == null) { show(p); return; }
-
-        PlayerData d = dm.getData(p);
         int line = 0;
 
         // 第1行: 留白 (避开小地图)

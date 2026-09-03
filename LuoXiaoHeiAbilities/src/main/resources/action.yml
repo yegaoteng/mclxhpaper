@@ -40,7 +40,7 @@ space:
     cost: 500
     damage: 0
     duration: 60
-    radius: 20
+    radius: 15
     effects:
       speed-boost: 2
       slowness-enemy: 2

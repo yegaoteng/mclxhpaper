@@ -5,10 +5,12 @@ import com.luoxiaohei.data.PlayerData;
 import org.bukkit.*;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
@@ -136,13 +138,14 @@ public class FireAbility extends BaseAbility implements Listener {
         }.runTaskTimer(plugin, 0, 5);
     }
 
-    // ===== 事件: 右键触发技能 (左键=正常攻击) =====
-    @EventHandler
+    // ===== 事件: 右键触发技能 (左键=正常攻击, 可对着空气释放) =====
+    @EventHandler(priority = EventPriority.HIGH)
     public void onInteract(PlayerInteractEvent e) {
         Player p = e.getPlayer();
         PlayerData d = dm.getData(p);
         if (d.getAbilityType() != AbilityType.FIRE) return;
         if (!d.isEnabled()) return; // 技能关闭时不拦截
+        if (e.getHand() != EquipmentSlot.HAND) return; // 仅主手触发
         // 只拦截右键 (左键正常)
         if (e.getAction() != Action.RIGHT_CLICK_AIR && e.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         // 手持灵瓜时不触发技能 (灵瓜监听器已cancel, 这里跳过)

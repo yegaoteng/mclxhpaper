@@ -9,11 +9,13 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.potion.PotionEffect;
@@ -205,13 +207,13 @@ public class SpaceAbility extends BaseAbility implements Listener {
         }
     }
 
-    // ===== 技能2: 空间领域 =====
+    // ===== 技能2: 空间领域 (对着空气释放, 以自身为中心半径15格) =====
     public void castDomain(Player p) {
         if (!aEnabled("space-domain")) return;
         String err = preCheck(p, "space-domain");
         if (err != null) { p.sendMessage(err); return; }
         int duration = cfg.getActionInt("space.space-domain.duration", 60);
-        int radius = cfg.getActionInt("space.space-domain.radius", 20);
+        int radius = cfg.getActionInt("space.space-domain.radius", 15);
         applyCost(p, "space-domain");
         Domain d = new Domain();
         d.owner = p; d.center = p.getLocation(); d.radius = radius;
@@ -376,13 +378,14 @@ public class SpaceAbility extends BaseAbility implements Listener {
         }
     }
 
-    // ===== 事件: 右键触发 =====
-    @EventHandler
+    // ===== 事件: 右键触发 (可对着空气释放) =====
+    @EventHandler(priority = EventPriority.HIGH)
     public void onInteract(PlayerInteractEvent e) {
         Player p = e.getPlayer();
         PlayerData d = dm.getData(p);
         if (d.getAbilityType() != AbilityType.SPACE) return;
         if (!d.isEnabled()) return;
+        if (e.getHand() != EquipmentSlot.HAND) return; // 仅主手触发
         if (e.getAction() != Action.RIGHT_CLICK_AIR && e.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         // 手持灵瓜时不触发技能 (灵瓜监听器已cancel, 这里跳过)
         if (plugin.getSpiritItemManager().isSpiritMelon(p.getInventory().getItemInMainHand())) return;

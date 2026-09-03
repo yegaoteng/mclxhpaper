@@ -1,6 +1,7 @@
 package com.luoxiaohei.listeners;
 
 import com.luoxiaohei.LuoXiaoHeiPlugin;
+import com.luoxiaohei.abilities.AbilityType;
 import com.luoxiaohei.data.PlayerData;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -26,8 +27,10 @@ public class PlayerListener implements Listener {
         PlayerData d = plugin.getPlayerDataManager().getData(p);
         // 应用修炼阶数属性
         plugin.getCultivationManager().applyLevelStats(p, d.getCultivationLevel());
-        // 显示HUD
-        plugin.getHudManager().show(p);
+        // 仅有能力者显示HUD (普通玩家隐藏所有HUD显示)
+        if (d.getAbilityType() != AbilityType.NONE) {
+            plugin.getHudManager().show(p);
+        }
     }
 
     @EventHandler

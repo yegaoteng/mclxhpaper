@@ -6,10 +6,12 @@ import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -29,12 +31,29 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class MetalAbility extends BaseAbility implements Listener {
 
+    // 金属方块/物品
     private static final List<Material> METALS = Arrays.asList(
             Material.IRON_BLOCK, Material.GOLD_BLOCK, Material.COPPER_BLOCK,
-            Material.IRON_INGOT, Material.GOLD_INGOT, Material.COPPER_INGOT,
+            Material.RAW_IRON_BLOCK, Material.RAW_GOLD_BLOCK, Material.RAW_COPPER_BLOCK,
             Material.NETHERITE_BLOCK, Material.IRON_BARS, Material.ANVIL,
             Material.CHIPPED_ANVIL, Material.DAMAGED_ANVIL, Material.HEAVY_WEIGHTED_PRESSURE_PLATE,
-            Material.LIGHT_WEIGHTED_PRESSURE_PLATE, Material.HOPPER, Material.BELL
+            Material.LIGHT_WEIGHTED_PRESSURE_PLATE, Material.HOPPER, Material.BELL,
+            Material.IRON_INGOT, Material.GOLD_INGOT, Material.COPPER_INGOT,
+            Material.NETHERITE_INGOT, Material.RAW_IRON, Material.RAW_GOLD, Material.RAW_COPPER
+    );
+
+    // 所有矿物方块 (金系可操控所有矿物块)
+    private static final Set<Material> ORES = Set.of(
+            Material.COAL_ORE, Material.DEEPSLATE_COAL_ORE,
+            Material.IRON_ORE, Material.DEEPSLATE_IRON_ORE,
+            Material.COPPER_ORE, Material.DEEPSLATE_COPPER_ORE,
+            Material.GOLD_ORE, Material.DEEPSLATE_GOLD_ORE,
+            Material.REDSTONE_ORE, Material.DEEPSLATE_REDSTONE_ORE,
+            Material.LAPIS_ORE, Material.DEEPSLATE_LAPIS_ORE,
+            Material.DIAMOND_ORE, Material.DEEPSLATE_DIAMOND_ORE,
+            Material.EMERALD_ORE, Material.DEEPSLATE_EMERALD_ORE,
+            Material.NETHER_GOLD_ORE, Material.NETHER_QUARTZ_ORE,
+            Material.ANCIENT_DEBRIS
     );
 
     private final Map<UUID, List<FallingBlock>> floatingMetals = new ConcurrentHashMap<>();
@@ -46,7 +65,7 @@ public class MetalAbility extends BaseAbility implements Listener {
         super(plugin, "metal");
     }
 
-    public boolean isMetal(Material m) { return METALS.contains(m); }
+    public boolean isMetal(Material m) { return METALS.contains(m) || ORES.contains(m); }
 
     // ===== 技能0: 金属操控 =====
     public void metalControl(Player p) {
@@ -133,18 +152,16 @@ public class MetalAbility extends BaseAbility implements Listener {
             ItemStack item = inv.getItem(slot);
             if (item == null) continue;
             Material mat = item.getType();
-            if (mat == Material.IRON_INGOT || mat == Material.IRON_BLOCK) {
-                Material blockMat = itemToBlock(mat);
-                if (blockMat != null) {
-                    int take = Math.min(item.getAmount(), need - collected);
-                    for (int i = 0; i < take; i++) {
-                        spawnFloatingMetal(p, blockMat, current);
-                        collected++;
-                    }
-                    item.setAmount(item.getAmount() - take);
-                    if (item.getAmount() <= 0) inv.setItem(slot, null);
-                }
+            if (!isMetal(mat)) continue;
+            Material blockMat = itemToBlock(mat);
+            if (blockMat == null) continue;
+            int take = Math.min(item.getAmount(), need - collected);
+            for (int i = 0; i < take; i++) {
+                spawnFloatingMetal(p, blockMat, current);
+                collected++;
             }
+            item.setAmount(item.getAmount() - take);
+            if (item.getAmount() <= 0) inv.setItem(slot, null);
         }
         return collected;
     }
@@ -156,6 +173,9 @@ public class MetalAbility extends BaseAbility implements Listener {
             case GOLD_INGOT: return Material.GOLD_BLOCK;
             case COPPER_INGOT: return Material.COPPER_BLOCK;
             case NETHERITE_INGOT: return Material.NETHERITE_BLOCK;
+            case RAW_IRON: return Material.RAW_IRON_BLOCK;
+            case RAW_GOLD: return Material.RAW_GOLD_BLOCK;
+            case RAW_COPPER: return Material.RAW_COPPER_BLOCK;
             default: return null;
         }
     }
@@ -173,11 +193,15 @@ public class MetalAbility extends BaseAbility implements Listener {
 
     private void startFloatingOrbit(Player p, FallingBlock fb) {
         final float[] angle = {(float)(Math.random() * Math.PI * 2)};
+        // 修复: 半径从0平滑增大, 避免铁块瞬间跳到2.2格远 (看起来像发射了)
+        final double[] curR = {0.0};
+        final double targetR = 2.2;
         BukkitTask task = new BukkitRunnable() {
             @Override public void run() {
                 if (fb.isDead() || !p.isOnline()) { cancel(); orbitTasks.remove(fb.getEntityId()); return; }
                 angle[0] += 0.15;
-                double r = 2.2;
+                if (curR[0] < targetR) curR[0] = Math.min(targetR, curR[0] + 0.25);
+                double r = curR[0];
                 Location cur = p.getLocation();
                 Location dest = cur.clone().add(Math.cos(angle[0])*r, 1.2, Math.sin(angle[0])*r);
                 fb.teleport(dest);
@@ -348,13 +372,14 @@ public class MetalAbility extends BaseAbility implements Listener {
         return false;
     }
 
-    // ===== 事件: 右键触发技能 (左键=正常攻击/破坏) =====
-    @EventHandler
+    // ===== 事件: 右键触发技能 (左键=正常攻击/破坏, 可对着空气释放) =====
+    @EventHandler(priority = EventPriority.HIGH)
     public void onInteract(PlayerInteractEvent e) {
         Player p = e.getPlayer();
         PlayerData d = dm.getData(p);
         if (d.getAbilityType() != AbilityType.METAL) return;
         if (!d.isEnabled()) return; // 技能关闭时不拦截
+        if (e.getHand() != EquipmentSlot.HAND) return; // 仅主手触发
         // 只拦截右键 (左键正常)
         if (e.getAction() != Action.RIGHT_CLICK_AIR && e.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         // 手持灵瓜时不触发技能 (灵瓜监听器已cancel, 这里跳过)

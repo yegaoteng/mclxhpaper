@@ -42,9 +42,19 @@ public class AbilityManager {
             int max = cfg.getActionInt("space.space-teleport.max-charges", 3);
             dm.getData(player).setCharges("space-teleport", max);
         }
+        // 显示HUD (OP用指令set系能力后才显示)
+        plugin.getHudManager().show(player);
         player.sendMessage(msg.getPrefixed("ability-set",
             "ability", type.getChinese(), "ability_color", type.getColor()));
         return true;
+    }
+
+    public void clearPlayerAbility(Player player) {
+        PlayerData data = dm.getData(player);
+        data.setAbilityType(AbilityType.NONE);
+        data.setEnabled(false);
+        // 隐藏HUD
+        plugin.getHudManager().hide(player);
     }
 
     public void toggleAbility(Player player, boolean enable) {

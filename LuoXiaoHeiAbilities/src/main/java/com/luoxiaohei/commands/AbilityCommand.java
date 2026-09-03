@@ -85,8 +85,7 @@ public class AbilityCommand implements CommandExecutor, TabCompleter {
         if (target == null) { s.sendMessage(plugin.getMessagesManager().getPrefixed("cmd-player-not-found")); return; }
         AbilityType type = AbilityType.fromString(args[2]);
         if (type == AbilityType.NONE) {
-            PlayerData d = plugin.getPlayerDataManager().getData(target);
-            d.setAbilityType(AbilityType.NONE); d.setEnabled(false);
+            plugin.getAbilityManager().clearPlayerAbility(target);
             s.sendMessage("§a已清除 " + target.getName() + " 的能力");
             return;
         }
