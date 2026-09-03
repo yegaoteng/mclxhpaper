@@ -39,20 +39,24 @@ public class SpiritItemManager implements Listener {
 
     private final LuoXiaoHeiPlugin plugin;
     private final NamespacedKey keyType;
+    // 灵矿方块类型 (铁矿材质 + 深板岩铁矿)
     private final Material oreBlockType;
+    private final Material deepOreBlockType;
+    // 灵块方块类型 (玩家放置的灵块, 用于倍率叠加)
+    private final Material spiritBlockType;
 
     // 放置的灵块位置缓存 (worldUID -> Set<encodedPos>)
     private final Map<UUID, Set<Long>> placedBlocks = new ConcurrentHashMap<>();
 
-    // 被插件追踪的灵矿世界方块 (区分自然海晶灯和灵矿)
+    // 被插件追踪的灵矿世界方块 (区分普通铁矿和灵矿)
     private final Set<Long> trackedOreBlocks = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     public SpiritItemManager(LuoXiaoHeiPlugin plugin) {
         this.plugin = plugin;
         this.keyType = new NamespacedKey(plugin, "spirit_type");
-        Material mat = Material.matchMaterial(
-            plugin.getConfig().getString("spirit-ore.block-type", "SEA_LANTERN"));
-        this.oreBlockType = (mat != null) ? mat : Material.SEA_LANTERN;
+        this.oreBlockType = Material.IRON_ORE;
+        this.deepOreBlockType = Material.DEEPSLATE_IRON_ORE;
+        this.spiritBlockType = Material.SEA_LANTERN;
     }
 
     // ========== 物品创建 ==========
@@ -150,14 +154,15 @@ public class SpiritItemManager implements Listener {
     @EventHandler
     public void onBreak(BlockBreakEvent e) {
         Block b = e.getBlock();
-        if (b.getType() != oreBlockType) return;
+        // 检查是否为灵矿 (铁矿材质 + 被追踪)
+        if (b.getType() != oreBlockType && b.getType() != deepOreBlockType) return;
         if (!isTrackedOre(b)) return;
 
         // 灵矿掉落
         e.setDropItems(false);
         untrackOre(b);
         b.getWorld().dropItemNaturally(b.getLocation(), createRawOre(1 + (int)(Math.random() * 2)));
-        b.getWorld().spawnParticle(Particle.END_ROD, b.getLocation().add(0.5, 0.5, 0.5), 10, 0.3, 0.3, 0.3, 0.05);
+        b.getWorld().spawnParticle(Particle.END_ROD, b.getLocation().add(0.5, 0.5, 0.5), 15, 0.3, 0.3, 0.3, 0.1);
         e.getPlayer().playSound(b.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_BREAK, 1, 1.5f);
 
         // 从缓存移除
@@ -260,4 +265,44 @@ public class SpiritItemManager implements Listener {
     private static int decodeX(long key) { return (int)(key >> 38); }
     private static int decodeY(long key) { return (int)((key >> 26) & 0xFFF); }
     private static int decodeZ(long key) { return (int)(key & 0x3FFFFFF); }
+
+    // ========== 灵矿发光粒子调度器 ==========
+    // 模拟附魔光效: 在被追踪的灵矿上方生成 END_ROD 闪光
+    private org.bukkit.scheduler.BukkitTask glowTask;
+
+    public void startGlowScheduler() {
+        if (glowTask != null) glowTask.cancel();
+        int interval = plugin.getConfig().getInt("performance.ore-glow-interval", 30);
+        glowTask = org.bukkit.Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            if (trackedOreBlocks.isEmpty()) return;
+            // 遍历在线玩家附近的灵矿, 生成发光粒子
+            for (Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
+                org.bukkit.Location pLoc = p.getLocation();
+                int pchX = pLoc.getBlockX() >> 4;
+                int pchZ = pLoc.getBlockZ() >> 4;
+                // 仅检查玩家周围3区块内的灵矿
+                int checked = 0;
+                for (Long key : trackedOreBlocks) {
+                    if (checked++ > 200) break; // 限制每次检查数量
+                    int bx = decodeX(key), by = decodeY(key), bz = decodeZ(key);
+                    int chX = bx >> 4, chZ = bz >> 4;
+                    if (Math.abs(chX - pchX) > 3 || Math.abs(chZ - pchZ) > 3) continue;
+                    // 距离检查 (32格内才显示粒子)
+                    long dx = bx - pLoc.getBlockX();
+                    long dy = by - pLoc.getBlockY();
+                    long dz = bz - pLoc.getBlockZ();
+                    if (dx*dx + dy*dy + dz*dz > 1024) continue;
+                    org.bukkit.World w = pLoc.getWorld();
+                    if (w == null) continue;
+                    // 不验证方块类型(性能), 只显示粒子
+                    w.spawnParticle(Particle.END_ROD,
+                        bx + 0.5, by + 0.5, bz + 0.5, 1, 0.15, 0.15, 0.15, 0.02);
+                }
+            }
+        }, 40L, interval);
+    }
+
+    public void stopGlowScheduler() {
+        if (glowTask != null) { glowTask.cancel(); glowTask = null; }
+    }
 }

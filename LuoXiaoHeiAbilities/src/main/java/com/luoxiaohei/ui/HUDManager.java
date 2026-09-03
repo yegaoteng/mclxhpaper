@@ -89,6 +89,8 @@ public class HUDManager {
             Objective obj = sb.registerNewObjective("lxh_hud", "dummy");
             obj.setDisplaySlot(DisplaySlot.SIDEBAR);
             obj.setDisplayName("§r");
+            // 隐藏右侧HUD数字 (Paper 1.21+ NumberFormat.blank)
+            try { obj.numberFormat(io.papermc.paper.scoreboard.numbers.NumberFormat.blank()); } catch (Throwable ignored) {}
             objectives.put(p.getUniqueId(), obj);
 
             Team[] ts = new Team[MAX_LINES];

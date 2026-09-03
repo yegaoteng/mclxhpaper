@@ -118,6 +118,7 @@ public final class LuoXiaoHeiPlugin extends JavaPlugin {
         oreManager.startRegenScheduler();
         spaceAbility.startRestoreScheduler();
         spaceAbility.startDomainScheduler();
+        spiritItemManager.startGlowScheduler();
 
         getLogger().info("======================================");
         getLogger().info(" LuoXiaoHeiAbilities v2.0 已启动");

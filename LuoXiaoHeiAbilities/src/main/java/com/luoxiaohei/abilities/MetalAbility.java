@@ -57,15 +57,22 @@ public class MetalAbility extends BaseAbility implements Listener {
                 k -> Collections.synchronizedList(new ArrayList<>()));
         current.removeIf(fb -> fb == null || fb.isDead());
 
-        // 有悬浮金属 → 发射
+        // 有悬浮金属 → 发射 (不检查冷却, 发射本身无冷却)
         if (!current.isEmpty()) {
             fireMetal(p, current);
             return;
         }
 
-        // 无悬浮金属 → 收集
-        String err = preCheck(p, "metal-control");
-        if (err != null) { p.sendMessage(err); return; }
+        // 无悬浮金属 → 收集 (检查灵力+冷却)
+        if (d.getSpiritual() < aCost("metal-control")) {
+            p.sendMessage(msg.getPrefixed("skill-no-spirit", "cost", String.valueOf(aCost("metal-control"))));
+            return;
+        }
+        if (dm.getCooldownRemain(p, "metal-control") > 0) {
+            long remain = dm.getCooldownRemain(p, "metal-control") / 1000 + 1;
+            p.sendMessage(msg.getPrefixed("skill-cooldown", "seconds", String.valueOf(remain)));
+            return;
+        }
         int maxBlocks = cfg.getActionInt("metal.metal-control.max-blocks", 8);
         int range = cfg.getActionInt("metal.metal-control.range", 30);
 
@@ -180,7 +187,7 @@ public class MetalAbility extends BaseAbility implements Listener {
         orbitTasks.put(fb.getEntityId(), task);
     }
 
-    // ===== 发射金属 (修复伤害) =====
+    // ===== 发射金属 (修复伤害+发射不稳定) =====
     private void fireMetal(Player p, List<FallingBlock> list) {
         if (list.isEmpty()) return;
         FallingBlock fb = list.remove(0);
@@ -191,7 +198,11 @@ public class MetalAbility extends BaseAbility implements Listener {
         double speed = cfg.getActionDouble("metal.metal-control.projectile-speed", 1.5);
         double dmg = aDmg("metal-control");
 
-        Vector dir = p.getEyeLocation().getDirection().normalize().multiply(speed);
+        // 发射方向: 用玩家视线方向
+        final Vector dir = p.getEyeLocation().getDirection().normalize().multiply(speed);
+        // 先确保方块在玩家眼前, 避免被墙挡住
+        Location spawn = p.getEyeLocation().add(p.getEyeLocation().getDirection().multiply(1.5));
+        fb.teleport(spawn);
         fb.setGravity(true);
         fb.setVelocity(dir);
         fb.setDropItem(true);

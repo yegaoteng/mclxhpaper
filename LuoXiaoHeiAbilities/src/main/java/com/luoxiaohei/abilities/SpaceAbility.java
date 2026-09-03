@@ -15,6 +15,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.metadata.MetadataValue;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -109,7 +110,17 @@ public class SpaceAbility extends BaseAbility implements Listener {
         domainTask = new BukkitRunnable() {
             @Override public void run() {
                 long now = System.currentTimeMillis();
-                activeDomains.removeIf(d -> now > d.endTime);
+                // 结束的领域: 清除所有者metadata
+                activeDomains.removeIf(d -> {
+                    if (now > d.endTime) {
+                        if (d.owner != null && d.owner.isOnline()) {
+                            d.owner.removeMetadata("domain-owner", plugin);
+                            d.owner.removeMetadata("domain-immune", plugin);
+                        }
+                        return true;
+                    }
+                    return false;
+                });
                 for (Domain d : activeDomains) {
                     try { applyDomainEffects(d); spawnBlackDomainVisual(d); } catch (Exception ignored) {}
                 }
@@ -125,12 +136,16 @@ public class SpaceAbility extends BaseAbility implements Listener {
         boolean blind = eff != null && eff.getBoolean("blindness", false);
 
         if (d.owner.isOnline() && isInside(d, d.owner.getLocation())) {
+            // 速度2 (去除跳跃提升)
             d.owner.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 40, speed-1, false, false, false));
-            d.owner.addPotionEffect(new PotionEffect(Compat.EFFECT_JUMP_BOOST, 40, 1, false, false, false));
             if (blind) d.owner.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, 60, 0, false, false, false));
+            // 标记领域加成
             d.owner.setMetadata("domain-owner", new FixedMetadataValue(plugin, String.valueOf(dmgBoost)));
+            // 标记领域免伤 (95%减伤)
+            d.owner.setMetadata("domain-immune", new FixedMetadataValue(plugin, "0.95"));
         } else {
             d.owner.removeMetadata("domain-owner", plugin);
+            d.owner.removeMetadata("domain-immune", plugin);
         }
         for (Entity e : d.center.getWorld().getNearbyEntities(d.center, d.radius, d.radius, d.radius)) {
             if (e == d.owner || !(e instanceof LivingEntity le)) continue;
@@ -290,27 +305,45 @@ public class SpaceAbility extends BaseAbility implements Listener {
             p.sendMessage("§c[空间瞬移] 充能不足 (" + charges + "/" + maxCharges + ")");
             return;
         }
-        if (dm.consumeSpiritual(p, aCost("space-teleport"))) {
-            int range = cfg.getActionInt("space.space-teleport.range", 20);
-            var ray = p.rayTraceBlocks(range, FluidCollisionMode.NEVER);
-            Location dest;
-            if (ray != null && ray.getHitBlock() != null) {
-                dest = ray.getHitPosition().toLocation(p.getWorld());
-            } else {
-                dest = p.getEyeLocation().add(p.getEyeLocation().getDirection().multiply(range));
-            }
-            while (dest.getBlock().getType().isSolid() && dest.getY() < 320) dest.add(0, 1, 0);
-            dest.setX(dest.getBlockX()+0.5); dest.setZ(dest.getBlockZ()+0.5);
-            Location old = p.getLocation();
-            p.teleport(dest);
-            p.getWorld().spawnParticle(Particle.PORTAL, old, 30, 0.5,1,0.5,0.1);
-            p.getWorld().spawnParticle(Particle.PORTAL, dest, 30, 0.5,1,0.5,0.1);
-            playSound(p, Sound.ENTITY_ENDERMAN_TELEPORT);
-            dm.useCharge(p, "space-teleport", maxCharges);
-            dm.rechargeTick(p, "space-teleport", maxCharges, chargeTime);
-        } else {
+        if (!dm.consumeSpiritual(p, aCost("space-teleport"))) {
             p.sendMessage("§c灵力不足!");
+            return;
         }
+        int range = cfg.getActionInt("space.space-teleport.range", 20);
+        var ray = p.rayTraceBlocks(range, FluidCollisionMode.NEVER);
+        Location dest;
+        if (ray != null && ray.getHitBlock() != null) {
+            // 命中墙: 瞬移到命中点前1格 (不穿墙, 避免卡墙里)
+            Vector hit = ray.getHitPosition();
+            // 向后退1格, 落脚在墙前
+            Vector back = p.getEyeLocation().getDirection().normalize().multiply(-1.0);
+            dest = new Location(p.getWorld(), hit.getX() + back.getX(),
+                hit.getY() + back.getY(), hit.getZ() + back.getZ());
+            // 如果退1格仍是实心 (贴脸墙), 提示不能对着墙
+            if (dest.getBlock().getType().isSolid()) {
+                p.sendMessage("§c[空间瞬移] 不能对着墙使用! 请对着空气或空地");
+                dm.addSpiritual(p, aCost("space-teleport")); // 退还灵力
+                return;
+            }
+        } else {
+            // 对着空气: 瞬移到视线尽头
+            dest = p.getEyeLocation().add(p.getEyeLocation().getDirection().multiply(range));
+        }
+        // 落脚点向上找安全位置 (避免卡在方块里)
+        while (dest.getBlock().getType().isSolid() && dest.getY() < 320) dest.add(0, 1, 0);
+        while (dest.clone().add(0, -1, 0).getBlock().getType().isAir() && dest.getY() > -64) dest.add(0, -1, 0);
+        dest.setX(dest.getBlockX() + 0.5);
+        dest.setZ(dest.getBlockZ() + 0.5);
+        // 保留玩家朝向 (修复瞬移后视角反向)
+        dest.setYaw(p.getLocation().getYaw());
+        dest.setPitch(p.getLocation().getPitch());
+        Location old = p.getLocation();
+        p.teleport(dest);
+        p.getWorld().spawnParticle(Particle.PORTAL, old, 30, 0.5,1,0.5,0.1);
+        p.getWorld().spawnParticle(Particle.PORTAL, dest, 30, 0.5,1,0.5,0.1);
+        playSound(p, Sound.ENTITY_ENDERMAN_TELEPORT);
+        dm.useCharge(p, "space-teleport", maxCharges);
+        dm.rechargeTick(p, "space-teleport", maxCharges, chargeTime);
     }
 
     // ===== 技能3: 虚空斩 =====
@@ -365,16 +398,35 @@ public class SpaceAbility extends BaseAbility implements Listener {
     @EventHandler
     public void onDamage(EntityDamageEvent e) {
         if (!(e.getEntity() instanceof Player p)) return;
-        Double shield = tempShield.get(p.getUniqueId());
-        if (shield == null || shield <= 0) return;
         double dmg = e.getFinalDamage();
         if (dmg <= 0) return;
-        double absorb = Math.min(shield, dmg);
-        shield -= absorb;
-        tempShield.put(p.getUniqueId(), shield);
-        e.setDamage(dmg - absorb);
-        p.spawnParticle(Particle.PORTAL, p.getLocation().add(0,1,0), 10, 0.3,0.5,0.3,0.05);
-        if (shield <= 0) tempShield.remove(p.getUniqueId());
+        boolean reduced = false;
+
+        // 领域免伤 (95%减伤) - 适用于所有伤害源 (近战/远程/魔法)
+        for (MetadataValue mv : p.getMetadata("domain-immune")) {
+            if (mv.getOwningPlugin() == plugin) {
+                try {
+                    double immune = Double.parseDouble(mv.asString());
+                    double reduced2 = dmg * (1 - immune);
+                    e.setDamage(reduced2);
+                    dmg = reduced2;
+                    reduced = true;
+                    p.spawnParticle(Particle.PORTAL, p.getLocation().add(0,1,0), 5, 0.3,0.5,0.3,0.05);
+                } catch (Exception ignored) {}
+                break;
+            }
+        }
+
+        // 临时护盾 (吞噬获得)
+        Double shield = tempShield.get(p.getUniqueId());
+        if (shield != null && shield > 0) {
+            double absorb = Math.min(shield, dmg);
+            shield -= absorb;
+            tempShield.put(p.getUniqueId(), shield);
+            e.setDamage(dmg - absorb);
+            if (!reduced) p.spawnParticle(Particle.PORTAL, p.getLocation().add(0,1,0), 10, 0.3,0.5,0.3,0.05);
+            if (shield <= 0) tempShield.remove(p.getUniqueId());
+        }
     }
 
     @EventHandler

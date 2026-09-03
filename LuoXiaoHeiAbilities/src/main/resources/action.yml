@@ -45,6 +45,7 @@ space:
       speed-boost: 2
       slowness-enemy: 2
       damage-boost: 0.3
+      damage-reduction: 0.95
       blindness: false
   space-devour:
     enabled: true

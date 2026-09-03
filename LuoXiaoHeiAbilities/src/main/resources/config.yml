@@ -50,12 +50,12 @@ spiritual:
   # 灵瓜恢复量
   spirit-melon-restore: 750
 
-# 灵矿配置
+# 灵矿配置 (v2.3: 铁矿材质 + 附魔光效粒子 + 只在矿洞生成)
 spirit-ore:
   enabled: true
-  # 灵矿世界方块类型 (白色发光)
-  block-type: SEA_LANTERN
-  # 生成概率 (铁矿级别, 比钻石常见)
+  # 灵矿方块: 铁矿(浅层y>=0) + 深板岩铁矿(深层y<0), 外观与普通铁矿一致
+  # 附魔光效: 由END_ROD粒子模拟 (玩家附近32格内的灵矿会闪烁)
+  # 生成几率: = 铁矿级别 (20次/区块)
   spawn-rate: iron
   min-height: -24
   max-height: 56
@@ -77,6 +77,7 @@ performance:
   hud-update-interval: 10
   regen-check-interval: 20
   ore-cache-ttl: 100
+  ore-glow-interval: 30  # 灵矿发光粒子间隔(tick)
 
 # 权限节点
 permissions:
