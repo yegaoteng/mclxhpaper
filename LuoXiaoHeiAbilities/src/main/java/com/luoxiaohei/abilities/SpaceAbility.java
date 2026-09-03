@@ -378,17 +378,26 @@ public class SpaceAbility extends BaseAbility implements Listener {
         }
     }
 
+    // 防止对空气+对物体同时触发两次 (去抖)
+    private final Map<UUID, Long> interactDebounce = new ConcurrentHashMap<>();
+    private static final long INTERACT_DEBOUNCE_MS = 80;
+
     // ===== 事件: 右键触发 (可对着空气释放) =====
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onInteract(PlayerInteractEvent e) {
         Player p = e.getPlayer();
         PlayerData d = dm.getData(p);
         if (d.getAbilityType() != AbilityType.SPACE) return;
         if (!d.isEnabled()) return;
-        if (e.getHand() != EquipmentSlot.HAND) return; // 仅主手触发
-        if (e.getAction() != Action.RIGHT_CLICK_AIR && e.getAction() != Action.RIGHT_CLICK_BLOCK) return;
-        // 手持灵瓜时不触发技能 (灵瓜监听器已cancel, 这里跳过)
+        Action act = e.getAction();
+        if (act != Action.RIGHT_CLICK_AIR && act != Action.RIGHT_CLICK_BLOCK) return;
         if (plugin.getSpiritItemManager().isSpiritMelon(p.getInventory().getItemInMainHand())) return;
+        EquipmentSlot h = e.getHand();
+        if (h != null && h != EquipmentSlot.HAND) return;
+        long now = System.currentTimeMillis();
+        Long last = interactDebounce.get(p.getUniqueId());
+        if (last != null && now - last < INTERACT_DEBOUNCE_MS) return;
+        interactDebounce.put(p.getUniqueId(), now);
         e.setCancelled(true);
         switch (d.getCurrentSkillIndex()) {
             case 0: devourBlocks(p); break;

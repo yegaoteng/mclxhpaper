@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class MetalAbility extends BaseAbility implements Listener {
 
-    // 金属方块/物品
+    // 金属方块/物品+原材料
     private static final List<Material> METALS = Arrays.asList(
             Material.IRON_BLOCK, Material.GOLD_BLOCK, Material.COPPER_BLOCK,
             Material.RAW_IRON_BLOCK, Material.RAW_GOLD_BLOCK, Material.RAW_COPPER_BLOCK,
@@ -39,10 +39,17 @@ public class MetalAbility extends BaseAbility implements Listener {
             Material.CHIPPED_ANVIL, Material.DAMAGED_ANVIL, Material.HEAVY_WEIGHTED_PRESSURE_PLATE,
             Material.LIGHT_WEIGHTED_PRESSURE_PLATE, Material.HOPPER, Material.BELL,
             Material.IRON_INGOT, Material.GOLD_INGOT, Material.COPPER_INGOT,
-            Material.NETHERITE_INGOT, Material.RAW_IRON, Material.RAW_GOLD, Material.RAW_COPPER
+            Material.NETHERITE_INGOT, Material.RAW_IRON, Material.RAW_GOLD, Material.RAW_COPPER,
+            Material.COAL, Material.CHARCOAL, Material.COAL_BLOCK,
+            Material.LAPIS_LAZULI, Material.LAPIS_BLOCK,
+            Material.REDSTONE, Material.REDSTONE_BLOCK,
+            Material.DIAMOND, Material.DIAMOND_BLOCK,
+            Material.EMERALD, Material.EMERALD_BLOCK,
+            Material.QUARTZ, Material.QUARTZ_BLOCK,
+            Material.AMETHYST_SHARD, Material.AMETHYST_BLOCK, Material.BUDDING_AMETHYST
     );
 
-    // 所有矿物方块 (金系可操控所有矿物块)
+    // 所有矿物方块 (金系可操控所有矿物块,含矿石+矿物块)
     private static final Set<Material> ORES = Set.of(
             Material.COAL_ORE, Material.DEEPSLATE_COAL_ORE,
             Material.IRON_ORE, Material.DEEPSLATE_IRON_ORE,
@@ -53,7 +60,12 @@ public class MetalAbility extends BaseAbility implements Listener {
             Material.DIAMOND_ORE, Material.DEEPSLATE_DIAMOND_ORE,
             Material.EMERALD_ORE, Material.DEEPSLATE_EMERALD_ORE,
             Material.NETHER_GOLD_ORE, Material.NETHER_QUARTZ_ORE,
-            Material.ANCIENT_DEBRIS
+            Material.ANCIENT_DEBRIS,
+            Material.COAL_BLOCK, Material.IRON_BLOCK, Material.GOLD_BLOCK, Material.COPPER_BLOCK,
+            Material.DIAMOND_BLOCK, Material.EMERALD_BLOCK, Material.LAPIS_BLOCK,
+            Material.REDSTONE_BLOCK, Material.QUARTZ_BLOCK, Material.NETHERITE_BLOCK,
+            Material.RAW_IRON_BLOCK, Material.RAW_GOLD_BLOCK, Material.RAW_COPPER_BLOCK,
+            Material.AMETHYST_BLOCK, Material.BUDDING_AMETHYST
     );
 
     private final Map<UUID, List<FallingBlock>> floatingMetals = new ConcurrentHashMap<>();
@@ -176,6 +188,13 @@ public class MetalAbility extends BaseAbility implements Listener {
             case RAW_IRON: return Material.RAW_IRON_BLOCK;
             case RAW_GOLD: return Material.RAW_GOLD_BLOCK;
             case RAW_COPPER: return Material.RAW_COPPER_BLOCK;
+            case COAL: case CHARCOAL: return Material.COAL_BLOCK;
+            case LAPIS_LAZULI: return Material.LAPIS_BLOCK;
+            case REDSTONE: return Material.REDSTONE_BLOCK;
+            case DIAMOND: return Material.DIAMOND_BLOCK;
+            case EMERALD: return Material.EMERALD_BLOCK;
+            case QUARTZ: return Material.QUARTZ_BLOCK;
+            case AMETHYST_SHARD: return Material.AMETHYST_BLOCK;
             default: return null;
         }
     }
@@ -372,18 +391,31 @@ public class MetalAbility extends BaseAbility implements Listener {
         return false;
     }
 
+    // 防止对空气+对物体同时触发两次 (去抖)
+    private final Map<UUID, Long> interactDebounce = new ConcurrentHashMap<>();
+    private static final long INTERACT_DEBOUNCE_MS = 80;
+
     // ===== 事件: 右键触发技能 (左键=正常攻击/破坏, 可对着空气释放) =====
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onInteract(PlayerInteractEvent e) {
         Player p = e.getPlayer();
         PlayerData d = dm.getData(p);
         if (d.getAbilityType() != AbilityType.METAL) return;
-        if (!d.isEnabled()) return; // 技能关闭时不拦截
-        if (e.getHand() != EquipmentSlot.HAND) return; // 仅主手触发
-        // 只拦截右键 (左键正常)
-        if (e.getAction() != Action.RIGHT_CLICK_AIR && e.getAction() != Action.RIGHT_CLICK_BLOCK) return;
-        // 手持灵瓜时不触发技能 (灵瓜监听器已cancel, 这里跳过)
+        if (!d.isEnabled()) return;
+        // 只拦截右键 (左键正常) — 兼容 AIR+BLOCK 两种场景
+        Action act = e.getAction();
+        if (act != Action.RIGHT_CLICK_AIR && act != Action.RIGHT_CLICK_BLOCK) return;
+        // 手持灵瓜时不触发技能
         if (plugin.getSpiritItemManager().isSpiritMelon(p.getInventory().getItemInMainHand())) return;
+        // 主手检查 (避免副手也触发一次). 注意: RIGHT_CLICK_AIR 可能 hand=null
+        EquipmentSlot h = e.getHand();
+        if (h != null && h != EquipmentSlot.HAND) return;
+        // 去抖: 防止 BLOCK+AIR 双重触发
+        long now = System.currentTimeMillis();
+        Long last = interactDebounce.get(p.getUniqueId());
+        if (last != null && now - last < INTERACT_DEBOUNCE_MS) return;
+        interactDebounce.put(p.getUniqueId(), now);
+
         e.setCancelled(true);
         int idx = d.getCurrentSkillIndex();
         switch (idx) {

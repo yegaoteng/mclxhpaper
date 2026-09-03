@@ -72,12 +72,23 @@ public class HUDManager {
         if (task != null) task.cancel();
         task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             for (Player p : Bukkit.getOnlinePlayers()) {
+                // 普通玩家(无能力)不参与HUD更新
+                if (dm.getData(p).getAbilityType() == AbilityType.NONE) {
+                    // 清理遗留的计分板(防止残留显示)
+                    if (boards.containsKey(p.getUniqueId())) hide(p);
+                    continue;
+                }
                 try { update(p); } catch (Exception ignored) {}
             }
         }, 20L, updateInterval);
     }
 
     public void show(Player p) {
+        // 防御: 无能力者不显示HUD
+        if (dm.getData(p).getAbilityType() == AbilityType.NONE) {
+            hide(p);
+            return;
+        }
         Scoreboard sb = boards.get(p.getUniqueId());
         if (sb == null) {
             sb = Bukkit.getScoreboardManager().getNewScoreboard();
