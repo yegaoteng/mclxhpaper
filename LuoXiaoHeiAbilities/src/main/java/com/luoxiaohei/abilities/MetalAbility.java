@@ -395,19 +395,19 @@ public class MetalAbility extends BaseAbility implements Listener {
     private final Map<UUID, Long> interactDebounce = new ConcurrentHashMap<>();
     private static final long INTERACT_DEBOUNCE_MS = 80;
 
-    // ===== 事件: 右键触发技能 (左键=正常攻击/破坏, 可对着空气释放) =====
+    // ===== 事件: 左键触发技能 (攻击敌人走EntityDamage, 不受影响) =====
     @EventHandler(priority = EventPriority.LOWEST)
     public void onInteract(PlayerInteractEvent e) {
         Player p = e.getPlayer();
         PlayerData d = dm.getData(p);
         if (d.getAbilityType() != AbilityType.METAL) return;
         if (!d.isEnabled()) return;
-        // 只拦截右键 (左键正常) — 兼容 AIR+BLOCK 两种场景
+        // 左键点击空气或方块 → 释放技能 (左键攻击生物不触发PlayerInteractEvent, 不影响攻击)
         Action act = e.getAction();
-        if (act != Action.RIGHT_CLICK_AIR && act != Action.RIGHT_CLICK_BLOCK) return;
+        if (act != Action.LEFT_CLICK_AIR && act != Action.LEFT_CLICK_BLOCK) return;
         // 手持灵瓜时不触发技能
         if (plugin.getSpiritItemManager().isSpiritMelon(p.getInventory().getItemInMainHand())) return;
-        // 主手检查 (避免副手也触发一次). 注意: RIGHT_CLICK_AIR 可能 hand=null
+        // 主手检查 (避免副手也触发一次)
         EquipmentSlot h = e.getHand();
         if (h != null && h != EquipmentSlot.HAND) return;
         // 去抖: 防止 BLOCK+AIR 双重触发
@@ -416,6 +416,7 @@ public class MetalAbility extends BaseAbility implements Listener {
         if (last != null && now - last < INTERACT_DEBOUNCE_MS) return;
         interactDebounce.put(p.getUniqueId(), now);
 
+        // 取消事件: 左键点击方块时避免破坏方块 (技能优先)
         e.setCancelled(true);
         int idx = d.getCurrentSkillIndex();
         switch (idx) {

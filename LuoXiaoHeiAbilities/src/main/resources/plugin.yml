@@ -3,7 +3,7 @@ version: '${project.version}'
 main: com.luoxiaohei.LuoXiaoHeiPlugin
 api-version: '1.21'
 author: ppksp
-description: 罗小黑战记风格特殊能力插件 v2.4.1
+description: 罗小黑战记风格特殊能力插件 v2.4.2
 commands:
   ability:
     description: 能力管理指令

@@ -137,7 +137,7 @@ public class WoodAbility extends BaseAbility implements Listener {
     private final Map<UUID, Long> interactDebounce = new ConcurrentHashMap<>();
     private static final long INTERACT_DEBOUNCE_MS = 80;
 
-    // ===== 事件: 右键触发技能 (左键=正常攻击, 可对着空气释放) =====
+    // ===== 事件: 左键触发技能 (攻击敌人走EntityDamage, 不受影响) =====
     @EventHandler(priority = EventPriority.LOWEST)
     public void onInteract(PlayerInteractEvent e) {
         Player p = e.getPlayer();
@@ -145,7 +145,7 @@ public class WoodAbility extends BaseAbility implements Listener {
         if (d.getAbilityType() != AbilityType.WOOD) return;
         if (!d.isEnabled()) return;
         Action act = e.getAction();
-        if (act != Action.RIGHT_CLICK_AIR && act != Action.RIGHT_CLICK_BLOCK) return;
+        if (act != Action.LEFT_CLICK_AIR && act != Action.LEFT_CLICK_BLOCK) return;
         if (plugin.getSpiritItemManager().isSpiritMelon(p.getInventory().getItemInMainHand())) return;
         EquipmentSlot h = e.getHand();
         if (h != null && h != EquipmentSlot.HAND) return;
@@ -153,6 +153,7 @@ public class WoodAbility extends BaseAbility implements Listener {
         Long last = interactDebounce.get(p.getUniqueId());
         if (last != null && now - last < INTERACT_DEBOUNCE_MS) return;
         interactDebounce.put(p.getUniqueId(), now);
+        // 取消: 阻止破坏方块
         e.setCancelled(true);
         switch (d.getCurrentSkillIndex()) {
             case 0: healForest(p); break;
