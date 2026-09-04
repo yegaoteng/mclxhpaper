@@ -72,12 +72,10 @@ public final class LuoXiaoHeiPlugin extends JavaPlugin {
         keybindManager = new KeybindManager(this);
         spiritItemManager = new SpiritItemManager(this);
 
-        // 矿
+        // 矿 (v2.4.8+ 已废弃世界灵矿生成, 全部改为指令 /ability items 给予)
         oreManager = new OreManager(this);
         oreGenerator = new OreGenerator(this);
-        if (configManager.getConfig().getBoolean("spirit-ore.enabled")) {
-            oreGenerator.register();
-        }
+        // oreGenerator.register(); — 取消区块自动生成灵矿
 
         // 能力
         abilityManager = new AbilityManager(this);
@@ -118,11 +116,11 @@ public final class LuoXiaoHeiPlugin extends JavaPlugin {
         oreManager.startRegenScheduler();
         spaceAbility.startRestoreScheduler();
         spaceAbility.startDomainScheduler();
-        spiritItemManager.startGlowScheduler();
+        // spiritItemManager.startGlowScheduler(); — 无世界灵矿, 关闭粒子发光任务
 
         getLogger().info("======================================");
-        getLogger().info(" LuoXiaoHeiAbilities v2.0 已启动");
-        getLogger().info(" 五大能力 + 修炼5阶 + 灵矿系统 + HUD");
+        getLogger().info(" LuoXiaoHeiAbilities v2.4.8 已启动");
+        getLogger().info(" 五大能力 + 修炼5阶 + HUD + 灵物(指令给予)");
         getLogger().info("======================================");
     }
 

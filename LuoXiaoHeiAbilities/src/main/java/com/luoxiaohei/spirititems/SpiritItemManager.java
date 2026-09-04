@@ -60,58 +60,50 @@ public class SpiritItemManager implements Listener {
     }
 
     // ========== 物品创建 ==========
-    /** 灵矿 (挖灵矿掉落) — 载体:生铁块 RAW_IRON, CustomModelData=10001,
-     *  资源包需覆盖 assets/minecraft/models/item/raw_iron.json 添加 predicate custom_model_data=10001 */
+    /** 灵矿 — 载体:生铁块 RAW_IRON (无需资源包, 原版材质+改名) */
     public ItemStack createRawOre(int amount) {
         ItemStack item = new ItemStack(Material.RAW_IRON, amount);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName("§f灵矿");
-        meta.setLore(Arrays.asList("§7蕴含灵气的矿石", "§7烧炼后可获得灵粒", "§8[需要资源包激活自定义贴图]"));
+        meta.setLore(Arrays.asList("§7蕴含灵气的矿石", "§7烧炼后可获得灵粒"));
         meta.getPersistentDataContainer().set(keyType, PersistentDataType.STRING, "raw_ore");
-        meta.setCustomModelData(10001);
         meta.addEnchant(Enchantment.UNBREAKING, 1, true);
         meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_ENCHANTS);
         item.setItemMeta(meta);
         return item;
     }
 
-    /** 灵粒 — 载体:紫水晶碎片 AMETHYST_SHARD, CustomModelData=10002
-     *  资源包覆盖 assets/minecraft/models/item/amethyst_shard.json 添加 predicate */
+    /** 灵粒 — 载体:紫水晶碎片 AMETHYST_SHARD (无需资源包) */
     public ItemStack createParticle(int amount) {
         ItemStack item = new ItemStack(Material.AMETHYST_SHARD, amount);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName("§b灵粒");
-        meta.setLore(Arrays.asList("§7提纯后的灵气结晶", "§79个可合成灵块", "§7与西瓜合成灵瓜", "§8[需要资源包激活自定义贴图]"));
+        meta.setLore(Arrays.asList("§7提纯后的灵气结晶", "§79个可合成灵块", "§7与西瓜合成灵瓜"));
         meta.getPersistentDataContainer().set(keyType, PersistentDataType.STRING, "particle");
-        meta.setCustomModelData(10002);
         meta.addEnchant(Enchantment.UNBREAKING, 1, true);
         meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_ENCHANTS);
         item.setItemMeta(meta);
         return item;
     }
 
-    /** 灵块物品 (放置后 = 灵块方块倍率来源) — 载体:海晶灯 SEA_LANTERN, CustomModelData=10003
-     *  资源包覆盖 assets/minecraft/models/item/sea_lantern.json 添加 predicate */
+    /** 灵块物品 — 载体:海晶灯 SEA_LANTERN (放置后=灵块倍率方块, 无需资源包) */
     public ItemStack createSpiritBlock(int amount) {
         ItemStack item = new ItemStack(Material.SEA_LANTERN, amount);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName("§b灵块");
-        meta.setLore(Arrays.asList("§7凝聚灵气的发光方块", "§7放置后5格内倍率叠加", "§7最多16层(16倍)", "§8[需要资源包激活自定义贴图]"));
+        meta.setLore(Arrays.asList("§7凝聚灵气的发光方块", "§7放置后5格内倍率叠加", "§7最多16层(16倍)"));
         meta.getPersistentDataContainer().set(keyType, PersistentDataType.STRING, "spirit_block");
-        meta.setCustomModelData(10003);
         item.setItemMeta(meta);
         return item;
     }
 
-    /** 灵瓜 — 载体:闪烁西瓜片 GLISTERING_MELON_SLICE, CustomModelData=10004
-     *  资源包覆盖 assets/minecraft/models/item/glistering_melon_slice.json 添加 predicate */
+    /** 灵瓜 — 载体:闪烁西瓜片 GLISTERING_MELON_SLICE (无需资源包) */
     public ItemStack createSpiritMelon(int amount) {
         ItemStack item = new ItemStack(Material.GLISTERING_MELON_SLICE, amount);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName("§d灵瓜");
-        meta.setLore(Arrays.asList("§7灵粒与西瓜的融合", "§7食用恢复750灵力", "§8[需要资源包激活自定义贴图]"));
+        meta.setLore(Arrays.asList("§7灵粒与西瓜的融合", "§7食用恢复750灵力"));
         meta.getPersistentDataContainer().set(keyType, PersistentDataType.STRING, "spirit_melon");
-        meta.setCustomModelData(10004);
         item.setItemMeta(meta);
         return item;
     }

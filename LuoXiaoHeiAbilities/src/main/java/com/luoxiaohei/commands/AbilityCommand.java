@@ -225,40 +225,9 @@ public class AbilityCommand implements CommandExecutor, TabCompleter {
     }
 
     private void cmdGenOres(CommandSender s, String[] args) {
-        if (!s.hasPermission("ability.admin")) { s.sendMessage(plugin.getMessagesManager().getPrefixed("cmd-no-permission")); return; }
-
-        World world = null;
-        if (s instanceof Player p) world = p.getWorld();
-        if (world == null && args.length >= 2) world = Bukkit.getWorld(args[1]);
-        if (world == null) world = Bukkit.getWorlds().isEmpty() ? null : Bukkit.getWorlds().get(0);
-        if (world == null) { s.sendMessage("§c找不到世界"); return; }
-
-        int radius = 5;
-        if (args.length >= 2) {
-            try { radius = Math.max(1, Integer.parseInt(args[1])); } catch (NumberFormatException ignored) {}
-        }
-        if (s instanceof Player p) {
-            Chunk start = p.getChunk();
-            int total = 0, chunks = 0;
-            for (int dx = -radius; dx <= radius; dx++) {
-                for (int dz = -radius; dz <= radius; dz++) {
-                    Chunk c = world.getChunkAt(start.getX() + dx, start.getZ() + dz);
-                    int g = plugin.getOreGenerator().backfillChunk(world, c);
-                    total += g;
-                    chunks++;
-                }
-            }
-            s.sendMessage("§a灵矿回填完成! §e" + chunks + " 区块 §f生成 " + total + " 个灵矿");
-        } else {
-            // 控制台: 扫描所有已加载 chunk
-            int total = 0, chunks = 0;
-            for (Chunk c : world.getLoadedChunks()) {
-                int g = plugin.getOreGenerator().backfillChunk(world, c);
-                total += g;
-                chunks++;
-            }
-            s.sendMessage("§a灵矿回填完成! §e" + chunks + " 区块 §f生成 " + total + " 个灵矿");
-        }
+        // v2.4.8+: 灵矿世界生成已废弃, 提示用 /ability items 获取
+        s.sendMessage("§e[灵矿系统] §7世界灵矿自动生成已废弃, 不再在区块中放置灵矿方块。");
+        s.sendMessage("§e[灵矿系统] §f请使用 §a/ability items <ore|particle|block|melon|all> [数量] §f直接获取物品。");
     }
 
     private void cmdInfo(CommandSender s, String[] args) {
