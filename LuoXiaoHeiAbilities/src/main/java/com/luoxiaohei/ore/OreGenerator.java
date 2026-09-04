@@ -77,7 +77,9 @@ public class OreGenerator implements Listener {
 
         // 回到主线程执行 (绝对安全)
         Bukkit.getScheduler().runTask(plugin, () -> {
-            if (!populatedChunks.putIfAbsent(key, Boolean.TRUE).equals(null)) return;
+            // putIfAbsent 返回null = 之前不存在, 成功抢占, 允许生成
+            Boolean already = populatedChunks.putIfAbsent(key, Boolean.TRUE);
+            if (already != null) return; // 已被其他线程处理
             try {
                 doPopulate(e.getWorld(), e.getChunk());
             } catch (Exception ex) {
