@@ -50,15 +50,15 @@ spiritual:
   # 灵瓜恢复量
   spirit-melon-restore: 750
 
-# 灵矿配置 (v2.3: 铁矿材质 + 附魔光效粒子 + 只在矿洞生成)
+# 灵矿配置 (v2.4.3: 铁矿材质 + 附魔光效粒子 + 只在矿洞生成 + 新增genores回填命令)
 spirit-ore:
   enabled: true
   # 灵矿方块: 铁矿(浅层y>=0) + 深板岩铁矿(深层y<0), 外观与普通铁矿一致
   # 附魔光效: 由END_ROD粒子模拟 (玩家附近32格内的灵矿会闪烁)
   # 生成几率: = 铁矿级别 (20次/区块)
   spawn-rate: iron
-  min-height: -24
-  max-height: 56
+  min-height: -58      # 1.21深板岩层底部
+  max-height: 32       # 真正的矿洞深度,避开地表
   max-vein-size: 9
   attempts-per-chunk: 20
 

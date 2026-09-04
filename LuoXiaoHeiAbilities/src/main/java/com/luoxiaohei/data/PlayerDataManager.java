@@ -14,6 +14,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.bukkit.scheduler.BukkitTask;
+
 /**
  * 玩家数据管理器 - 线程安全缓存 + YAML持久化
  */
@@ -85,6 +87,32 @@ public class PlayerDataManager {
             plugin.getLogger().warning("加载玩家数据失败 " + uuid + ": " + e.getMessage());
             return null;
         }
+    }
+
+    private void scheduleSave(UUID uuid) {
+        if (uuid == null) return;
+        // 去抖: 同一玩家 5 秒内多次修改只保存一次
+        dirty.put(uuid, System.currentTimeMillis());
+        if (saveTask == null) startAutoSave();
+    }
+
+    private final Map<UUID, Long> dirty = new ConcurrentHashMap<>();
+    private BukkitTask saveTask;
+
+    private void startAutoSave() {
+        if (saveTask != null) saveTask.cancel();
+        saveTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+            if (dirty.isEmpty()) return;
+            // 异步批量保存所有 dirty 玩家 (避免主线程 I/O)
+            long now = System.currentTimeMillis();
+            for (UUID uuid : dirty.keySet()) {
+                Long t = dirty.get(uuid);
+                if (t != null && now - t > 5000L) {
+                    try { save(uuid); } catch (Exception ignored) {}
+                    dirty.remove(uuid);
+                }
+            }
+        }, 20L, 60L); // 1 tick 后首次检查, 每 3 秒检查一次
     }
 
     public void save(UUID uuid) {

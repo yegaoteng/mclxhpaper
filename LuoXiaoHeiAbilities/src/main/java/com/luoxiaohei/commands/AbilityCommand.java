@@ -5,11 +5,13 @@ import com.luoxiaohei.abilities.AbilityType;
 import com.luoxiaohei.data.PlayerData;
 import com.luoxiaohei.input.KeybindManager;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.Chunk;
 
 import java.util.*;
 
@@ -49,24 +51,26 @@ public class AbilityCommand implements CommandExecutor, TabCompleter {
             case "givespirit": cmdGiveSpirit(s, args); break;
             case "givexp": cmdGiveXp(s, args); break;
             case "items": cmdItems(s, args); break;
+            case "genores": cmdGenOres(s, args); break;
             default: help(s);
         }
         return true;
     }
 
     private void help(CommandSender s) {
-        s.sendMessage("§b===== §e罗小黑能力系统 v2.1 §b=====");
+        s.sendMessage("§b===== §e罗小黑能力系统 v2.4.3 §b=====");
         s.sendMessage("§7/ability list §f- 列出能力");
         s.sendMessage("§7/ability set <玩家> <metal|space|fire|thunder|wood>");
         s.sendMessage("§7/ability on|off [玩家] §f- 开关技能");
         s.sendMessage("§7/ability cycle §f- 手动切换技能");
-        s.sendMessage("§7/ability bind <cycle|toggle> <SNEAK|SWAP_HANDS|SHIFT_SWAP|DROP|SHIFT_DROP>");
+        s.sendMessage("§7/ability bind <cycle|toggle> <按键>");
         s.sendMessage("§7/ability items [ore|particle|block|melon|all] [数量] §f- 获取灵物");
         s.sendMessage("§7/ability givespirit <玩家> <数量> §f- 给予灵力");
         s.sendMessage("§7/ability givexp <玩家> <数量> §f- 给予修炼经验");
+        s.sendMessage("§7/ability genores [半径] §f- 对已加载区块回填灵矿");
         s.sendMessage("§7/ability info [玩家] §f- 查看信息");
         s.sendMessage("§7/ability reload §f- 重载配置");
-        s.sendMessage("§e默认按键: Shift=切换技能, F=开关技能");
+        s.sendMessage("§e左键空气=释放技能, Shift=切换技能, F=开关技能");
     }
 
     private void listAbilities(CommandSender s) {
@@ -220,6 +224,43 @@ public class AbilityCommand implements CommandExecutor, TabCompleter {
         s.sendMessage(plugin.getMessagesManager().getPrefixed("cmd-reload"));
     }
 
+    private void cmdGenOres(CommandSender s, String[] args) {
+        if (!s.hasPermission("ability.admin")) { s.sendMessage(plugin.getMessagesManager().getPrefixed("cmd-no-permission")); return; }
+
+        World world = null;
+        if (s instanceof Player p) world = p.getWorld();
+        if (world == null && args.length >= 2) world = Bukkit.getWorld(args[1]);
+        if (world == null) world = Bukkit.getWorlds().isEmpty() ? null : Bukkit.getWorlds().get(0);
+        if (world == null) { s.sendMessage("§c找不到世界"); return; }
+
+        int radius = 5;
+        if (args.length >= 2) {
+            try { radius = Math.max(1, Integer.parseInt(args[1])); } catch (NumberFormatException ignored) {}
+        }
+        if (s instanceof Player p) {
+            Chunk start = p.getChunk();
+            int total = 0, chunks = 0;
+            for (int dx = -radius; dx <= radius; dx++) {
+                for (int dz = -radius; dz <= radius; dz++) {
+                    Chunk c = world.getChunkAt(start.getX() + dx, start.getZ() + dz);
+                    int g = plugin.getOreGenerator().backfillChunk(world, c);
+                    total += g;
+                    chunks++;
+                }
+            }
+            s.sendMessage("§a灵矿回填完成! §e" + chunks + " 区块 §f生成 " + total + " 个灵矿");
+        } else {
+            // 控制台: 扫描所有已加载 chunk
+            int total = 0, chunks = 0;
+            for (Chunk c : world.getLoadedChunks()) {
+                int g = plugin.getOreGenerator().backfillChunk(world, c);
+                total += g;
+                chunks++;
+            }
+            s.sendMessage("§a灵矿回填完成! §e" + chunks + " 区块 §f生成 " + total + " 个灵矿");
+        }
+    }
+
     private void cmdInfo(CommandSender s, String[] args) {
         Player target;
         if (args.length >= 2) target = Bukkit.getPlayer(args[1]);
@@ -240,12 +281,13 @@ public class AbilityCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender s, Command cmd, String alias, String[] args) {
         List<String> r = new ArrayList<>();
         if (args.length == 1) {
-            for (String sub : Arrays.asList("list","set","on","off","cycle","info","reload","bind","givespirit","givexp","items"))
+            for (String sub : Arrays.asList("list","set","on","off","cycle","info","reload","bind","givespirit","givexp","items","genores"))
                 if (sub.startsWith(args[0].toLowerCase())) r.add(sub);
             return r;
         }
         if (args.length == 2 && !args[0].equalsIgnoreCase("list") && !args[0].equalsIgnoreCase("reload")
-                && !args[0].equalsIgnoreCase("cycle") && !args[0].equalsIgnoreCase("items")) {
+                && !args[0].equalsIgnoreCase("cycle") && !args[0].equalsIgnoreCase("items")
+                && !args[0].equalsIgnoreCase("genores")) {
             for (Player p : Bukkit.getOnlinePlayers())
                 if (p.getName().toLowerCase().startsWith(args[1].toLowerCase())) r.add(p.getName());
             return r;
