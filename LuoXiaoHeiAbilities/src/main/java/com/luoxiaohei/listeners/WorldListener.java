@@ -1,13 +1,14 @@
 package com.luoxiaohei.listeners;
 
 import com.luoxiaohei.LuoXiaoHeiPlugin;
-import org.bukkit.World;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.WorldInitEvent;
 
 /**
- * 世界事件监听器 v2.0
+ * 世界事件监听器 v2.4.4
+ * 不再注册 BlockPopulator (Moonrise 会在异步线程调用它, 导致方块操作崩溃)
+ * 灵矿生成全部靠 ChunkLoadEvent 主线程执行
  */
 public class WorldListener implements Listener {
 
@@ -19,12 +20,8 @@ public class WorldListener implements Listener {
 
     @EventHandler
     public void onWorldInit(WorldInitEvent e) {
-        if (!plugin.getConfig().getBoolean("spirit-ore.enabled")) return;
-        World w = e.getWorld();
-        try {
-            boolean registered = w.getPopulators().stream()
-                    .anyMatch(p -> p instanceof com.luoxiaohei.ore.OreGenerator);
-            if (!registered) w.getPopulators().add(plugin.getOreGenerator());
-        } catch (Exception ignored) {}
+        // v2.4.4: 不再向世界注册 BlockPopulator
+        // Moonrise/Paper 的 chunk 系统会在异步线程调用它, 导致方块操作崩溃
+        // 灵矿生成完全由 ChunkLoadEvent + runTask 主线程处理
     }
 }
