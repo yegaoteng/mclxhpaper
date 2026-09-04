@@ -40,15 +40,16 @@ public class OreGenerator implements Listener {
     public OreGenerator(LuoXiaoHeiPlugin plugin) {
         this.plugin = plugin;
         ConfigurationSection cfg = plugin.getConfig().getConfigurationSection("spirit-ore");
-        this.oreMaterial = Material.IRON_ORE;
-        this.deepOreMaterial = Material.DEEPSLATE_IRON_ORE;
+        this.oreMaterial = Material.SHROOMLIGHT;
+        this.deepOreMaterial = Material.SHROOMLIGHT;
         this.minHeight = cfg == null ? -58 : cfg.getInt("min-height", -58);
         this.maxHeight = cfg == null ? 32 : cfg.getInt("max-height", 32);
         this.maxVeinSize = cfg == null ? 4 : Math.min(4, cfg.getInt("max-vein-size", 4));
         // 铁矿级别: 原版MC 1.21 约6次/区块矿脉尝试
         this.attemptsPerChunk = cfg == null ? 6 : Math.min(8, cfg.getInt("attempts-per-chunk", 6));
-        plugin.getLogger().info("灵矿生成器初始化 v2.4.6: y=" + minHeight + "~" + maxHeight
-                + ", 每区块" + attemptsPerChunk + "次尝试, 矿脉大小1~" + maxVeinSize);
+        plugin.getLogger().info("灵矿生成器初始化 v2.4.7: y=" + minHeight + "~" + maxHeight
+                + ", 每区块" + attemptsPerChunk + "次尝试, 矿脉大小1~" + maxVeinSize
+                + ", 方块=SHROOMLIGHT(矿透可区分主世界无)");
     }
 
     public Material getOreMaterial() { return oreMaterial; }
@@ -58,7 +59,7 @@ public class OreGenerator implements Listener {
 
     public void register() {
         Bukkit.getPluginManager().registerEvents(this, plugin);
-        plugin.getLogger().info("灵矿生成器已注册 (ChunkLoadEvent 主线程模式 v2.4.6)");
+        plugin.getLogger().info("灵矿生成器已注册 (ChunkLoadEvent 主线程模式 v2.4.7, 矿石=SHROOMLIGHT)");
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

@@ -54,8 +54,8 @@ public class SpiritItemManager implements Listener {
     public SpiritItemManager(LuoXiaoHeiPlugin plugin) {
         this.plugin = plugin;
         this.keyType = new NamespacedKey(plugin, "spirit_type");
-        this.oreBlockType = Material.IRON_ORE;
-        this.deepOreBlockType = Material.DEEPSLATE_IRON_ORE;
+        this.oreBlockType = Material.SHROOMLIGHT;
+        this.deepOreBlockType = Material.SHROOMLIGHT;
         this.spiritBlockType = Material.SEA_LANTERN;
     }
 

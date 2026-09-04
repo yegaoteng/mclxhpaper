@@ -161,7 +161,7 @@ public class AbilityCommand implements CommandExecutor, TabCompleter {
         switch (type) {
             case "ore":
                 p.getInventory().addItem(sim.createRawOre(amount));
-                p.sendMessage("§a获得 §f灵矿石 §ax" + amount);
+                p.sendMessage("§a获得 §f灵矿 §ax" + amount);
                 break;
             case "particle":
                 p.getInventory().addItem(sim.createParticle(amount));
