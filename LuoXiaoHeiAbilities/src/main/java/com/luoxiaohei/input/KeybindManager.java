@@ -51,7 +51,8 @@ public class KeybindManager implements Listener {
     public void onSwapHands(PlayerSwapHandItemsEvent e) {
         Player p = e.getPlayer();
         PlayerData d = dm.getData(p);
-        if (d.getAbilityType() == AbilityType.NONE) return;
+        // 没有系能力的普通玩家: F键正常切换正副手,完全不拦截
+        if (d == null || d.getAbilityType() == AbilityType.NONE) return;
 
         boolean sneaking = p.isSneaking();
         String trigger = sneaking ? "SHIFT_SWAP" : "SWAP_HANDS";
@@ -63,13 +64,15 @@ public class KeybindManager implements Listener {
             e.setCancelled(true);
             toggleSkills(p);
         }
+        // 其他情况(绑定的不是SWAP系列): 不cancel, 让玩家正常切换副手
     }
 
     @EventHandler
     public void onDrop(PlayerDropItemEvent e) {
         Player p = e.getPlayer();
         PlayerData d = dm.getData(p);
-        if (d.getAbilityType() == AbilityType.NONE) return;
+        // 没有系能力的普通玩家: Q键正常丢弃
+        if (d == null || d.getAbilityType() == AbilityType.NONE) return;
 
         boolean sneaking = p.isSneaking();
         String trigger = sneaking ? "SHIFT_DROP" : "DROP";
@@ -81,13 +84,15 @@ public class KeybindManager implements Listener {
             e.setCancelled(true);
             toggleSkills(p);
         }
+        // 其他情况(绑定的不是DROP系列): 不cancel, 正常丢弃
     }
 
     @EventHandler
     public void onSneak(PlayerToggleSneakEvent e) {
         Player p = e.getPlayer();
         PlayerData d = dm.getData(p);
-        if (d.getAbilityType() == AbilityType.NONE) return;
+        // 没有系能力的普通玩家: 潜行不拦截
+        if (d == null || d.getAbilityType() == AbilityType.NONE) return;
         // 只在按下shift时触发 (不是松开)
         if (!e.isSneaking()) return;
 
