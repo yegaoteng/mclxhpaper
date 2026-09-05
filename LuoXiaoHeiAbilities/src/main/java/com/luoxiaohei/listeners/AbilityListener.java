@@ -48,8 +48,8 @@ public class AbilityListener implements Listener {
         Player killer = entity.getKiller();
         if (killer == null) return;
         com.luoxiaohei.data.PlayerData d = plugin.getPlayerDataManager().getData(killer);
-        // 有系能力即可获得经验 (不检查技能开关)
-        if (d.getAbilityType() == AbilityType.NONE) return;
+        // 有系能力(非NONE且非null)才能获得经验
+        if (d.getAbilityType() == null || d.getAbilityType() == AbilityType.NONE) return;
         plugin.getCultivationManager().grantKillXp(killer);
     }
 }

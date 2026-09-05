@@ -35,13 +35,16 @@ public class CultivationManager {
     public void grantKillXp(Player killer) {
         if (killer == null) return;
         PlayerData d = dm.getData(killer);
-        if (d.getAbilityType() == com.luoxiaohei.abilities.AbilityType.NONE) return;
+        if (d.getAbilityType() == null || d.getAbilityType() == com.luoxiaohei.abilities.AbilityType.NONE) return;
         int xp = plugin.getConfig().getInt("cultivation.xp-per-kill", 20);
         d.setCultivationXp(d.getCultivationXp() + xp);
         int need = getXpToNext(d.getCultivationLevel());
         if (need > 0) {
-            killer.sendMessage(msg.getPrefixed("cultivation-xp-gain", "xp", String.valueOf(xp),
-                    "need", String.valueOf(need)));
+            // 权限节点 luoxiaohei.xpmsg: false 时不显示修炼经验获取消息
+            if (killer.hasPermission("luoxiaohei.xpmsg")) {
+                killer.sendMessage(msg.getPrefixed("cultivation-xp-gain", "xp", String.valueOf(xp),
+                        "need", String.valueOf(need)));
+            }
         }
         checkLevelUp(killer);
     }
@@ -58,9 +61,11 @@ public class CultivationManager {
         if (d.getCultivationXp() < need) return;
         // 灵力需满
         if (d.getSpiritual() < d.getMaxSpiritual()) {
-            p.sendMessage(msg.getPrefixed("cultivation-need-full-spirit",
-                    "spiritual", String.valueOf(d.getSpiritual()),
-                    "max", String.valueOf(d.getMaxSpiritual())));
+            if (p.hasPermission("luoxiaohei.xpmsg")) {
+                p.sendMessage(msg.getPrefixed("cultivation-need-full-spirit",
+                        "spiritual", String.valueOf(d.getSpiritual()),
+                        "max", String.valueOf(d.getMaxSpiritual())));
+            }
             return;
         }
         // 升阶
