@@ -50,6 +50,8 @@ public class AbilityCommand implements CommandExecutor, TabCompleter {
             case "bind": cmdBind(s, args); break;
             case "givespirit": cmdGiveSpirit(s, args); break;
             case "givexp": cmdGiveXp(s, args); break;
+            case "setlevel": cmdSetLevel(s, args); break;
+            case "reset": cmdReset(s, args); break;
             case "items": cmdItems(s, args); break;
             case "genores": cmdGenOres(s, args); break;
             default: help(s);
@@ -67,6 +69,8 @@ public class AbilityCommand implements CommandExecutor, TabCompleter {
         s.sendMessage("§7/ability items [ore|particle|block|melon|all] [数量] §f- 获取灵物");
         s.sendMessage("§7/ability givespirit <玩家> <数量> §f- 给予灵力");
         s.sendMessage("§7/ability givexp <玩家> <数量> §f- 给予修炼经验");
+        s.sendMessage("§7/ability setlevel <玩家> <1-5> §f- 设置阶数");
+        s.sendMessage("§7/ability reset <玩家> §f- 重置阶数为一阶(经验清零)");
         s.sendMessage("§7/ability genores [半径] §f- 对已加载区块回填灵矿");
         s.sendMessage("§7/ability info [玩家] §f- 查看信息");
         s.sendMessage("§7/ability reload §f- 重载配置");
@@ -215,6 +219,41 @@ public class AbilityCommand implements CommandExecutor, TabCompleter {
         s.sendMessage(plugin.getMessagesManager().getPrefixed("cmd-give-xp", "player", target.getName(), "amount", String.valueOf(amount)));
         target.sendMessage("§6+" + amount + " 修炼经验");
         plugin.getCultivationManager().checkLevelUp(target);
+    }
+
+    private void cmdSetLevel(CommandSender s, String[] args) {
+        if (!s.hasPermission("ability.admin")) { s.sendMessage(plugin.getMessagesManager().getPrefixed("cmd-no-permission")); return; }
+        if (args.length < 3) { s.sendMessage("§c用法: /ability setlevel <玩家> <1-5>"); return; }
+        Player target = Bukkit.getPlayer(args[1]);
+        if (target == null) { s.sendMessage(plugin.getMessagesManager().getPrefixed("cmd-player-not-found")); return; }
+        int level;
+        try { level = Integer.parseInt(args[2]); } catch (Exception e) { s.sendMessage("§c阶数必须是数字"); return; }
+        if (level < 1 || level > 5) { s.sendMessage("§c阶数范围: 1-5"); return; }
+        PlayerData d = plugin.getPlayerDataManager().getData(target);
+        d.setCultivationLevel(level);
+        d.setCultivationXp(0);
+        // 灵力同步到该阶上限
+        int maxSp = plugin.getCultivationManager().getMaxSpiritual(level);
+        d.setMaxSpiritual(maxSp);
+        d.setSpiritual(Math.min(d.getSpiritual(), maxSp));
+        s.sendMessage("§a已将 " + target.getName() + " 的阶数设为 §f" + plugin.getCultivationManager().getLevelChinese(level)
+                + " §a(灵力上限" + maxSp + ")");
+        target.sendMessage("§a你的阶数已被设为 §f" + plugin.getCultivationManager().getLevelChinese(level));
+    }
+
+    private void cmdReset(CommandSender s, String[] args) {
+        if (!s.hasPermission("ability.admin")) { s.sendMessage(plugin.getMessagesManager().getPrefixed("cmd-no-permission")); return; }
+        if (args.length < 2) { s.sendMessage("§c用法: /ability reset <玩家>"); return; }
+        Player target = Bukkit.getPlayer(args[1]);
+        if (target == null) { s.sendMessage(plugin.getMessagesManager().getPrefixed("cmd-player-not-found")); return; }
+        PlayerData d = plugin.getPlayerDataManager().getData(target);
+        d.setCultivationLevel(1);
+        d.setCultivationXp(0);
+        int maxSp = plugin.getCultivationManager().getMaxSpiritual(1);
+        d.setMaxSpiritual(maxSp);
+        d.setSpiritual(Math.min(d.getSpiritual(), maxSp));
+        s.sendMessage("§a已重置 " + target.getName() + " 为一阶(经验清零)");
+        target.sendMessage("§a你的修炼已被重置为一阶");
     }
 
     private void cmdReload(CommandSender s) {
