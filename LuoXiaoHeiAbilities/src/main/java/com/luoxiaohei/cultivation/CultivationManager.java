@@ -87,16 +87,17 @@ public class CultivationManager {
         try {
             var attr = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
             if (attr != null) {
-                double base = 20.0; // 原始血量
-                // 移除之前的修饰符
-                attr.getModifiers().stream()
-                    .filter(m -> m.getName().equals("cultivation_bonus"))
-                    .forEach(attr::removeModifier);
+                // 先移除之前的修饰符 (拷贝到新列表避免 ConcurrentModificationException)
+                for (org.bukkit.attribute.AttributeModifier m : new java.util.ArrayList<>(attr.getModifiers())) {
+                    if ("cultivation_bonus".equals(m.getName())) attr.removeModifier(m);
+                }
                 if (bonusHealth > 0) {
                     attr.addModifier(new org.bukkit.attribute.AttributeModifier(
                         "cultivation_bonus", bonusHealth,
                         org.bukkit.attribute.AttributeModifier.Operation.ADD_NUMBER));
                 }
+                // 血量不超过新上限
+                if (p.getHealth() > attr.getValue()) p.setHealth(attr.getValue());
             }
         } catch (Exception ignored) {}
     }
