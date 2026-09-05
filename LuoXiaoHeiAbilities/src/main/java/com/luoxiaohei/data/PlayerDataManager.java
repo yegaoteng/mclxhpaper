@@ -123,7 +123,7 @@ public class PlayerDataManager {
         cfg.set("name", data.getName());
         cfg.set("spiritual", data.getSpiritual());
         cfg.set("max-spiritual", data.getMaxSpiritual());
-        cfg.set("ability-type", data.getAbilityType().name());
+        cfg.set("ability-type", data.getAbilityType() == null ? "NONE" : data.getAbilityType().name());
         cfg.set("enabled", data.isEnabled());
         cfg.set("cultivation.level", data.getCultivationLevel());
         cfg.set("cultivation.xp", data.getCultivationXp());
