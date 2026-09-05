@@ -120,6 +120,8 @@ public class KeybindManager implements Listener {
      */
     public void cycleSkill(Player p) {
         PlayerData d = dm.getData(p);
+        // 技能已关闭(F键toggle off)时不切换技能, 但F键仍可重新开启
+        if (!d.isEnabled()) return;
         int max = getSkillCount(d.getAbilityType());
         if (max == 0) return;
         d.setCurrentSkillIndex((d.getCurrentSkillIndex() + 1) % max);
