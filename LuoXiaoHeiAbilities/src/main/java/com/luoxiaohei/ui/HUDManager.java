@@ -72,9 +72,8 @@ public class HUDManager {
         if (task != null) task.cancel();
         task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             for (Player p : Bukkit.getOnlinePlayers()) {
-                // 普通玩家(无能力)不参与HUD更新
-                if (dm.getData(p).getAbilityType() == AbilityType.NONE) {
-                    // 清理遗留的计分板(防止残留显示)
+                // 无能力 或 无 luoxiaohei.hud 权限: 不参与HUD更新, 清理残留计分板
+                if (!canShowHud(p)) {
                     if (boards.containsKey(p.getUniqueId())) hide(p);
                     continue;
                 }
@@ -83,9 +82,15 @@ public class HUDManager {
         }, 20L, updateInterval);
     }
 
+    /** HUD显隐单一裁决: 必须同时有系能力 且 拥有 luoxiaohei.hud 权限 */
+    private boolean canShowHud(Player p) {
+        return dm.getData(p).getAbilityType() != AbilityType.NONE
+                && p.hasPermission("luoxiaohei.hud");
+    }
+
     public void show(Player p) {
-        // 防御: 无能力者不显示HUD
-        if (dm.getData(p).getAbilityType() == AbilityType.NONE) {
+        // 防御: 无能力 或 无权限 不显示HUD
+        if (!canShowHud(p)) {
             hide(p);
             return;
         }
@@ -132,8 +137,8 @@ public class HUDManager {
     private void update(Player p) {
         PlayerData d = dm.getData(p);
 
-        // 普通玩家(无能力)隐藏所有HUD显示, 直至OP用指令set系能力才显示
-        if (d.getAbilityType() == AbilityType.NONE) {
+        // 无能力 或 无 luoxiaohei.hud 权限: 隐藏所有HUD显示
+        if (d.getAbilityType() == AbilityType.NONE || !p.hasPermission("luoxiaohei.hud")) {
             if (boards.containsKey(p.getUniqueId())) hide(p);
             return;
         }

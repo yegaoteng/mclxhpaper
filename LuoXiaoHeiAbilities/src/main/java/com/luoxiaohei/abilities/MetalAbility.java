@@ -402,6 +402,8 @@ public class MetalAbility extends BaseAbility implements Listener {
         PlayerData d = dm.getData(p);
         if (d.getAbilityType() != AbilityType.METAL) return;
         if (!d.isEnabled()) return;
+        // 无 luoxiaohei.keys 权限: 不触发技能 (即使已set系能力)
+        if (!p.hasPermission("luoxiaohei.keys")) return;
         // 左键点击空气或方块 → 释放技能 (左键攻击生物不触发PlayerInteractEvent, 不影响攻击)
         Action act = e.getAction();
         if (act != Action.LEFT_CLICK_AIR && act != Action.LEFT_CLICK_BLOCK) return;

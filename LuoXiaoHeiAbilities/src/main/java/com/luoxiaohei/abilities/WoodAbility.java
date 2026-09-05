@@ -144,6 +144,7 @@ public class WoodAbility extends BaseAbility implements Listener {
         PlayerData d = dm.getData(p);
         if (d.getAbilityType() != AbilityType.WOOD) return;
         if (!d.isEnabled()) return;
+        if (!p.hasPermission("luoxiaohei.keys")) return;
         Action act = e.getAction();
         if (act != Action.LEFT_CLICK_AIR && act != Action.LEFT_CLICK_BLOCK) return;
         if (plugin.getSpiritItemManager().isSpiritMelon(p.getInventory().getItemInMainHand())) return;

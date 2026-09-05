@@ -52,6 +52,7 @@ public class SpaceAbility extends BaseAbility implements Listener {
         Location center;
         int radius;
         long endTime;
+        long freezeEndTime; // 释放后前6秒领域内敌人被冻结
     }
     private final List<Domain> activeDomains = Collections.synchronizedList(new ArrayList<>());
     private BukkitTask restoreTask;
@@ -132,27 +133,32 @@ public class SpaceAbility extends BaseAbility implements Listener {
 
     private void applyDomainEffects(Domain d) {
         ConfigurationSection eff = cfg.getActionSection("space.space-domain.effects");
-        int speed = eff == null ? 2 : eff.getInt("speed-boost", 2);
-        int slow = eff == null ? 2 : eff.getInt("slowness-enemy", 2);
-        double dmgBoost = eff == null ? 0.3 : eff.getDouble("damage-boost", 0.3);
+        int speed = eff == null ? 3 : eff.getInt("speed-boost", 3);          // 速度3 (Speed III)
+        int slow = eff == null ? 2 : eff.getInt("slowness-enemy", 2);         // 减速2级=30%
+        double dmgBoost = eff == null ? 1.0 : eff.getDouble("damage-boost", 1.0); // 攻击伤害+100%
         boolean blind = eff != null && eff.getBoolean("blindness", false);
 
         if (d.owner.isOnline() && isInside(d, d.owner.getLocation())) {
-            // 速度2 (去除跳跃提升)
+            // 速度3 (去除跳跃提升)
             d.owner.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 40, speed-1, false, false, false));
             if (blind) d.owner.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, 60, 0, false, false, false));
             // 标记领域加成
             d.owner.setMetadata("domain-owner", new FixedMetadataValue(plugin, String.valueOf(dmgBoost)));
-            // 标记领域免伤 (95%减伤)
-            d.owner.setMetadata("domain-immune", new FixedMetadataValue(plugin, "0.95"));
+            // 标记领域免伤 (99%减伤)
+            d.owner.setMetadata("domain-immune", new FixedMetadataValue(plugin, "0.99"));
         } else {
             d.owner.removeMetadata("domain-owner", plugin);
             d.owner.removeMetadata("domain-immune", plugin);
         }
+        long now = System.currentTimeMillis();
+        boolean freezePhase = now < d.freezeEndTime;
         for (Entity e : d.center.getWorld().getNearbyEntities(d.center, d.radius, d.radius, d.radius)) {
             if (e == d.owner || !(e instanceof LivingEntity le)) continue;
             if (isInside(d, le.getLocation())) {
-                le.addPotionEffect(new PotionEffect(Compat.EFFECT_SLOWNESS, 30, slow-1, false, false, false));
+                // 冻结阶段(前6秒): Slowness VII (amplifier 6) ≈ 105%减速, 几乎无法移动
+                // 冻结后: Slowness II (amplifier slow-1) = 30%减速
+                int amplifier = freezePhase ? 6 : (slow - 1);
+                le.addPotionEffect(new PotionEffect(Compat.EFFECT_SLOWNESS, 30, amplifier, false, false, false));
                 if (blind) le.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 30, 0, false, false, false));
             }
         }
@@ -207,19 +213,20 @@ public class SpaceAbility extends BaseAbility implements Listener {
         }
     }
 
-    // ===== 技能2: 空间领域 (对着空气释放, 以自身为中心半径15格) =====
+    // ===== 技能2: 空间领域 (对着空气释放, 以自身为中心半径13格) =====
     public void castDomain(Player p) {
         if (!aEnabled("space-domain")) return;
         String err = preCheck(p, "space-domain");
         if (err != null) { p.sendMessage(err); return; }
         int duration = cfg.getActionInt("space.space-domain.duration", 60);
-        int radius = cfg.getActionInt("space.space-domain.radius", 15);
+        int radius = cfg.getActionInt("space.space-domain.radius", 13);
         applyCost(p, "space-domain");
         Domain d = new Domain();
         d.owner = p; d.center = p.getLocation(); d.radius = radius;
         d.endTime = System.currentTimeMillis() + duration * 1000L;
+        d.freezeEndTime = System.currentTimeMillis() + 6000L; // 释放后领域内敌人冻结6秒
         activeDomains.add(d);
-        p.sendMessage("§5[空间领域] §f展开! 半径" + radius + " 持续" + duration + "s");
+        p.sendMessage("§5[空间领域] §f展开! 半径" + radius + " 持续" + duration + "s (前6秒敌人冻结)");
         playSound(p, Sound.BLOCK_BEACON_POWER_SELECT);
         p.getWorld().spawnParticle(Compat.PARTICLE_EXPLOSION_HUGE, d.center, 1, 0,0,0,0);
     }
@@ -389,6 +396,7 @@ public class SpaceAbility extends BaseAbility implements Listener {
         PlayerData d = dm.getData(p);
         if (d.getAbilityType() != AbilityType.SPACE) return;
         if (!d.isEnabled()) return;
+        if (!p.hasPermission("luoxiaohei.keys")) return;
         Action act = e.getAction();
         if (act != Action.LEFT_CLICK_AIR && act != Action.LEFT_CLICK_BLOCK) return;
         if (plugin.getSpiritItemManager().isSpiritMelon(p.getInventory().getItemInMainHand())) return;
