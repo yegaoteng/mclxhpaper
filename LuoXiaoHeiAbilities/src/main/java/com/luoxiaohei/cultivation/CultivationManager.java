@@ -15,6 +15,10 @@ import org.bukkit.entity.Player;
  */
 public class CultivationManager {
 
+    // 修炼血量加成修饰符的固定 UUID (避免每次new随机UUID导致removeModifier匹配失败而叠加)
+    private static final java.util.UUID CULTIVATION_BONUS_UUID =
+            java.util.UUID.fromString("c0c1a710-1b00-4c00-8000-000000000001");
+
     private final LuoXiaoHeiPlugin plugin;
     private final PlayerDataManager dm;
     private final MessagesManager msg;
@@ -87,13 +91,16 @@ public class CultivationManager {
         try {
             var attr = p.getAttribute(Attribute.GENERIC_MAX_HEALTH);
             if (attr != null) {
-                // 先移除之前的修饰符 (拷贝到新列表避免 ConcurrentModificationException)
+                // 1. 清理历史残留: 遍历移除所有名为 cultivation_bonus 的旧修饰符
+                //    (旧版bug用随机UUID叠加的, 无法用固定UUID移除, 必须按name遍历)
                 for (org.bukkit.attribute.AttributeModifier m : new java.util.ArrayList<>(attr.getModifiers())) {
                     if ("cultivation_bonus".equals(m.getName())) attr.removeModifier(m);
                 }
+                // 2. 按固定UUID再移除一次 (确保当前版本的modifier被清掉)
+                attr.removeModifier(CULTIVATION_BONUS_UUID);
                 if (bonusHealth > 0) {
                     attr.addModifier(new org.bukkit.attribute.AttributeModifier(
-                        "cultivation_bonus", bonusHealth,
+                        CULTIVATION_BONUS_UUID, "cultivation_bonus", bonusHealth,
                         org.bukkit.attribute.AttributeModifier.Operation.ADD_NUMBER));
                 }
                 // 血量不超过新上限

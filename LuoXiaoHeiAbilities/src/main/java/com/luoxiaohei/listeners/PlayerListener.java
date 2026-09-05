@@ -46,7 +46,12 @@ public class PlayerListener implements Listener {
         PlayerData d = plugin.getPlayerDataManager().getData(p);
         int keep = plugin.getConfig().getInt("spiritual.death-keep-percent", 50);
         d.setSpiritual((int)(d.getMaxSpiritual() * keep / 100.0));
-        // 重生后重新应用属性
-        plugin.getCultivationManager().applyLevelStats(p, d.getCultivationLevel());
+        // 重生后延迟一tick重新应用属性 (PlayerRespawnEvent触发时属性系统可能未初始化完成,
+        // 直接设置会被Paper的重生逻辑覆盖)
+        org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
+            if (p.isOnline()) {
+                plugin.getCultivationManager().applyLevelStats(p, d.getCultivationLevel());
+            }
+        });
     }
 }
