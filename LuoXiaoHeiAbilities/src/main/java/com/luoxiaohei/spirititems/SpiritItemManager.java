@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * 2. 烧炼灵矿石 → 2x 灵粒(particle)
  * 3. 9x灵粒 → 1x灵块(block) (工作台)
  * 4. 灵粒 + 西瓜片 → 灵瓜(melon) (工作台, 闪烁西瓜片改名)
- * 5. 吃灵瓜 → +750灵力
+ * 5. 吃灵瓜 → +750灵力 + 5格饱食度
  * 6. 放置灵块 → 5格内倍率叠加(最多16层=16倍)
  */
 public class SpiritItemManager implements Listener {
@@ -110,7 +110,7 @@ public class SpiritItemManager implements Listener {
         ItemStack item = new ItemStack(Material.GLISTERING_MELON_SLICE, amount);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName("§d灵瓜");
-        meta.setLore(Arrays.asList("§7灵粒与西瓜的融合", "§7食用恢复750灵力", "§8[需要资源包激活自定义贴图]"));
+        meta.setLore(Arrays.asList("§7灵粒与西瓜的融合", "§7食用恢复750灵力+5格饱食度", "§8[需要资源包激活自定义贴图]"));
         meta.getPersistentDataContainer().set(keyType, PersistentDataType.STRING, "spirit_melon");
         meta.setCustomModelData(10004);
         item.setItemMeta(meta);
@@ -233,6 +233,8 @@ public class SpiritItemManager implements Listener {
         // 恢复灵力
         int restore = plugin.getConfig().getInt("spiritual.spirit-melon-restore", 750);
         plugin.getPlayerDataManager().addSpiritual(p, restore);
+        // 恢复5格饱食度 (10 food level = 5个鸡腿)
+        p.setFoodLevel(Math.min(20, p.getFoodLevel() + 10));
         p.sendMessage(plugin.getMessagesManager().getPrefixed("spirit-melon-eat"));
         // 食用音效+粒子
         p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_BURP, 1, 1);
@@ -246,6 +248,8 @@ public class SpiritItemManager implements Listener {
         Player p = e.getPlayer();
         int restore = plugin.getConfig().getInt("spiritual.spirit-melon-restore", 750);
         plugin.getPlayerDataManager().addSpiritual(p, restore);
+        // 恢复5格饱食度 (10 food level = 5个鸡腿)
+        p.setFoodLevel(Math.min(20, p.getFoodLevel() + 10));
         p.sendMessage(plugin.getMessagesManager().getPrefixed("spirit-melon-eat"));
     }
 
